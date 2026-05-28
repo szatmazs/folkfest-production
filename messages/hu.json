@@ -1,0 +1,69 @@
+{
+  "common": {
+    "readMore": "Tovább olvasok",
+    "contact": "Kapcsolat",
+    "events": "Események",
+    "about": "Rólunk",
+    "followUs": "Kövess minket",
+    "allRightsReserved": "Minden jog fenntartva",
+    "loading": "Betöltés...",
+    "error": "Hiba történt",
+    "success": "Sikeres művelet",
+    "send": "Küldés",
+    "details": "Részletek",
+    "open_on_facebook": "Megnyitás Facebookon",
+    "close": "Bezárás"
+  },
+  "navigation": {
+    "home": "Kezdőlap",
+    "projects": "Projektek",
+    "news": "Hírek",
+    "videos": "Videók",
+    "releases": "Kiadványok",
+    "support": "Támogatás",
+    "contact": "Kapcsolat"
+  },
+  "footer": {
+    "brandDescription": "Kulturális értékteremtés, hagyományőrzés és tehetséggondozás a Kárpát-medencében.",
+    "contact": "Kapcsolat",
+    "followUs": "Kövess minket"
+  },
+  "contact": {
+    "detailsTitle": "Elérhetőségek",
+    "infoTitle": "Adatok",
+    "form": {
+      "title": "Üzenetküldés",
+      "nameLabel": "Név",
+      "namePlaceholder": "Az Ön neve",
+      "emailLabel": "Email",
+      "subjectLabel": "Tárgy",
+      "subjectPlaceholder": "Üzenet tárgya",
+      "messageLabel": "Üzenet",
+      "messagePlaceholder": "Írja le kérdését...",
+      "sendButton": "Küldés",
+      "sending": "Küldés folyamatban...",
+      "successMessage": "Üzenetét sikeresen elküldtük! Kollégáink hamarosan felveszik Önnel a kapcsolatot.",
+      "errorMessage": "Hiba történt a küldés során.",
+      "networkError": "Hálózati hiba történt."
+    }
+  },
+  "releases": {
+    "title": "Kiadványok",
+    "subtitle": "A FolkFest Kulturális Egyesület kiadványai",
+    "details": "Részletek",
+    "tracks": "Dallista",
+    "streaming": "Meghallgatom"
+  },
+  "videos": {
+    "title": "Videógaléria",
+    "subtitle": "Tekintse meg legfrissebb videóinkat",
+    "close": "Bezárás"
+  },
+  "projects": {
+    "title": "Projektek",
+    "subtitle": "Hagyományőrző és tehetséggondozó programjaink",
+    "details": "Részletek",
+    "partners": "Partnerek",
+    "results": "Eredmények"
+  }
+}

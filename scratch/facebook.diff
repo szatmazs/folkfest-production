@@ -1,0 +1,432 @@
+diff --git a/Users/szatmazs/folkfest/src/actions/facebook.ts b/Users/szatmazs/folkfest_full_production/src/actions/facebook.ts
+index 64b00a1..66d1416 100644
+--- a/Users/szatmazs/folkfest/src/actions/facebook.ts
++++ b/Users/szatmazs/folkfest_full_production/src/actions/facebook.ts
+@@ -113,7 +113,6 @@ export async function getFacebookEvents(): Promise<FacebookEvent[]> {
+     const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+ 
+     let shouldSync = false;
+-    let awaitSync = false;
+     if (process.env.NODE_ENV === 'development') {
+         const latestEvent = await prisma.facebookEvent.findFirst({
+             orderBy: { updatedAt: 'desc' },
+@@ -121,95 +120,83 @@ export async function getFacebookEvents(): Promise<FacebookEvent[]> {
+         });
+         const count = await prisma.facebookEvent.count();
+         const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+-        if (count === 0) {
+-            shouldSync = true;
+-            awaitSync = true;
+-        } else if (latestEvent && latestEvent.updatedAt < sixHoursAgo) {
++        if (count === 0 || (latestEvent && latestEvent.updatedAt < sixHoursAgo)) {
+             shouldSync = true;
+         }
+     }
+ 
+     if (pageId && accessToken && shouldSync) {
+-        const syncFn = async () => {
+-            try {
+-                const fields = "id,name,description,start_time,end_time,cover,place";
+-                const upcomingUrl = `https://graph.facebook.com/v19.0/${pageId}/events?fields=${fields}&time_filter=upcoming&access_token=${accessToken}`;
+-                const sinceTimestamp = 1593813600; // 2020-07-04
+-                const pastUrl = `https://graph.facebook.com/v19.0/${pageId}/events?fields=${fields}&time_filter=past&since=${sinceTimestamp}&limit=50&access_token=${accessToken}`;
+-
+-                const [upcomingRes, pastRes] = await Promise.all([
+-                    fetch(upcomingUrl, { next: { revalidate: 3600 } }),
+-                    fetch(pastUrl, { next: { revalidate: 3600 } }),
+-                ]);
+-
+-                let apiEvents: FacebookApiEvent[] = [];
+-                if (upcomingRes.ok) {
+-                    const data = await upcomingRes.json();
+-                    apiEvents = [...apiEvents, ...(data.data || [])];
+-                }
+-                if (pastRes.ok) {
+-                    const data = await pastRes.json();
+-                    apiEvents = [...apiEvents, ...(data.data || [])];
+-                }
+-
+-                if (apiEvents.length > 0) {
+-                    // Sync events
+-                    for (const event of apiEvents) {
+-                        const existing = await prisma.facebookEvent.findUnique({
+-                            where: { id: event.id },
+-                            select: { nameEn: true, descriptionEn: true, placeEn: true }
+-                        });
+-
+-                        const coverUrl = event.cover?.source;
+-                        const localCover = coverUrl ? await downloadFacebookImage(coverUrl, event.id, 'events') : null;
+-
+-                        // Automatic Translation - ONLY if missing
+-                        const nameEn = (existing?.nameEn) ? existing.nameEn : await translateText(event.name || '', 'en');
+-                        const descriptionEn = (existing?.descriptionEn) ? existing.descriptionEn : (event.description ? await translateText(event.description, 'en') : null);
+-                        const placeEn = (existing?.placeEn) ? existing.placeEn : (event.place?.name ? await translateText(event.place.name, 'en') : null);
++        try {
++            const fields = "id,name,description,start_time,end_time,cover,place";
++            const upcomingUrl = `https://graph.facebook.com/v19.0/${pageId}/events?fields=${fields}&time_filter=upcoming&access_token=${accessToken}`;
++            const sinceTimestamp = 1593813600; // 2020-07-04
++            const pastUrl = `https://graph.facebook.com/v19.0/${pageId}/events?fields=${fields}&time_filter=past&since=${sinceTimestamp}&limit=50&access_token=${accessToken}`;
++
++            const [upcomingRes, pastRes] = await Promise.all([
++                fetch(upcomingUrl, { next: { revalidate: 3600 } }),
++                fetch(pastUrl, { next: { revalidate: 3600 } }),
++            ]);
++
++            let apiEvents: FacebookApiEvent[] = [];
++            if (upcomingRes.ok) {
++                const data = await upcomingRes.json();
++                apiEvents = [...apiEvents, ...(data.data || [])];
++            }
++            if (pastRes.ok) {
++                const data = await pastRes.json();
++                apiEvents = [...apiEvents, ...(data.data || [])];
++            }
+ 
+-                        await prisma.facebookEvent.upsert({
+-                            where: { id: event.id },
+-                            create: {
+-                                id: event.id,
+-                                name: event.name,
+-                                nameEn: nameEn,
+-                                description: event.description,
+-                                descriptionEn: descriptionEn,
+-                                startTime: new Date(event.start_time),
+-                                endTime: event.end_time ? new Date(event.end_time) : null,
+-                                coverUrl: coverUrl,
+-                                localCoverPath: localCover,
+-                                place: event.place?.name,
+-                                placeEn: placeEn,
+-                            },
+-                            update: {
+-                                name: event.name,
+-                                nameEn: nameEn,
+-                                description: event.description,
+-                                descriptionEn: descriptionEn,
+-                                startTime: new Date(event.start_time),
+-                                endTime: event.end_time ? new Date(event.end_time) : null,
+-                                coverUrl: coverUrl,
+-                                place: event.place?.name,
+-                                placeEn: placeEn,
+-                                ...(localCover ? { localCoverPath: localCover } : {}),
+-                            }
+-                        });
++            if (apiEvents.length > 0) {
++                // Sync events
++                for (const event of apiEvents) {
++                    const existing = await prisma.facebookEvent.findUnique({
++                        where: { id: event.id },
++                        select: { nameEn: true, descriptionEn: true, placeEn: true }
++                    });
++
++                    const coverUrl = event.cover?.source;
++                    const localCover = coverUrl ? await downloadFacebookImage(coverUrl, event.id, 'events') : null;
++
++                    // Automatic Translation - ONLY if missing
++                    const nameEn = (existing?.nameEn) ? existing.nameEn : await translateText(event.name || '', 'en');
++                    const descriptionEn = (existing?.descriptionEn) ? existing.descriptionEn : (event.description ? await translateText(event.description, 'en') : null);
++                    const placeEn = (existing?.placeEn) ? existing.placeEn : (event.place?.name ? await translateText(event.place.name, 'en') : null);
++
++                    await prisma.facebookEvent.upsert({
++                        where: { id: event.id },
++                        create: {
++                            id: event.id,
++                            name: event.name,
++                            nameEn: nameEn,
++                            description: event.description,
++                            descriptionEn: descriptionEn,
++                            startTime: new Date(event.start_time),
++                            endTime: event.end_time ? new Date(event.end_time) : null,
++                            coverUrl: coverUrl,
++                            localCoverPath: localCover,
++                            place: event.place?.name,
++                            placeEn: placeEn,
++                        },
++                        update: {
++                            name: event.name,
++                            nameEn: nameEn,
++                            description: event.description,
++                            descriptionEn: descriptionEn,
++                            startTime: new Date(event.start_time),
++                            endTime: event.end_time ? new Date(event.end_time) : null,
++                            coverUrl: coverUrl,
++                            place: event.place?.name,
++                            placeEn: placeEn,
++                            ...(localCover ? { localCoverPath: localCover } : {}),
++                        }
++                    });
+ 
+-                        await new Promise(r => setTimeout(r, 600)); // Delay to avoid 429
+-                    }
++                    if (shouldSync) await new Promise(r => setTimeout(r, 600)); // Delay to avoid 429
+                 }
+-            } catch (error) {
+-                console.error("Failed to fetch/sync Facebook events:", error);
+             }
+-        };
+-
+-        if (awaitSync) {
+-            await syncFn();
+-        } else {
+-            console.log("[Facebook] Triggering background non-blocking event sync since DB has records...");
+-            syncFn().catch(e => console.error("Background event sync error:", e));
++        } catch (error) {
++            console.error("Failed to fetch/sync Facebook events:", error);
+         }
+     }
+ 
+@@ -242,7 +229,6 @@ export async function getFacebookPosts(options: { forceRefresh?: boolean } = {})
+     const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+     let profilePicture: string | null = null;
+     let shouldSync = options.forceRefresh;
+-    let awaitSync = options.forceRefresh || false;
+ 
+     // Auto-sync in development if DB is empty or data is older than 24h
+     if (process.env.NODE_ENV === 'development' && !shouldSync) {
+@@ -260,7 +246,6 @@ export async function getFacebookPosts(options: { forceRefresh?: boolean } = {})
+             if (count === 0) {
+                 console.log("[Facebook] Local DB is empty, triggering initial sync...");
+                 shouldSync = true;
+-                awaitSync = true;
+             } else if (latestPost && latestPost.updatedAt < twentyFourHoursAgo) {
+                 console.log("[Facebook] Data is older than 24h, triggering background sync...");
+                 shouldSync = true;
+@@ -271,133 +256,126 @@ export async function getFacebookPosts(options: { forceRefresh?: boolean } = {})
+     }
+ 
+     if (pageId && accessToken && shouldSync) {
+-        const syncFn = async () => {
+-            try {
+-                const fields = "id,message,created_time,full_picture,permalink_url,likes.summary(true),status_type,attachments{title,description,url,type,media,target{id,url}}";
+-                const postsUrl = `https://graph.facebook.com/v19.0/${pageId}/posts?fields=${fields}&access_token=${accessToken}&limit=100`;
+-                const pictureUrl = `https://graph.facebook.com/v19.0/${pageId}/picture?type=large&redirect=false&access_token=${accessToken}`;
+-
+-                const fetchOptions: RequestInit = { cache: 'no-store' };
+-
+-                const [postsRes, pictureRes] = await Promise.all([
+-                    fetch(postsUrl, fetchOptions),
+-                    fetch(pictureUrl, { next: { revalidate: 86400 } }) // Profile pic changes rarely
+-                ]);
+-
+-                if (postsRes.ok) {
+-                    const postsData = await postsRes.json();
+-                    const rawPosts = (postsData.data || []) as FacebookApiPost[];
+-                    console.log(`[Facebook Sync] Processing ${rawPosts.length} posts...`);
+-
+-                    // Get deleted posts to exclude
+-                    const deletedPosts = await prisma.deletedFacebookPost.findMany({ select: { id: true } });
+-                    const deletedIds = new Set(deletedPosts.map((d: any) => d.id));
+-
+-                    // Sync Posts
+-                    // Filter items with pictures for sync, or sync all? Previously filtered.
+-                    // We sync items that HAVE pictures to be consistent with previous logic
+-                    for (const post of rawPosts) {
+-                        if (deletedIds.has(post.id)) continue; // Skip deleted posts
+-
+-                        try {
+-                            const firstAttach = post.attachments?.data?.[0];
+-                            if (firstAttach?.title === 'Attachment Unavailable' ||
+-                                firstAttach?.title === 'Ez a tartalom jelenleg nem érhető el' ||
+-                                post.message?.includes('Ez a tartalom jelenleg nem érhető el')) {
+-                                continue;
+-                            }
++        try {
++            const fields = "id,message,created_time,full_picture,permalink_url,likes.summary(true),status_type,attachments{title,description,url,type,media,target{id,url}}";
++            const postsUrl = `https://graph.facebook.com/v19.0/${pageId}/posts?fields=${fields}&access_token=${accessToken}&limit=100`;
++            const pictureUrl = `https://graph.facebook.com/v19.0/${pageId}/picture?type=large&redirect=false&access_token=${accessToken}`;
++
++            const fetchOptions: RequestInit = { cache: 'no-store' };
++
++            const [postsRes, pictureRes] = await Promise.all([
++                fetch(postsUrl, fetchOptions),
++                fetch(pictureUrl, { next: { revalidate: 86400 } }) // Profile pic changes rarely
++            ]);
++
++            if (postsRes.ok) {
++                const postsData = await postsRes.json();
++                const rawPosts = (postsData.data || []) as FacebookApiPost[];
++                console.log(`[Facebook Sync] Processing ${rawPosts.length} posts...`);
++
++                // Get deleted posts to exclude
++                const deletedPosts = await prisma.deletedFacebookPost.findMany({ select: { id: true } });
++                const deletedIds = new Set(deletedPosts.map((d: any) => d.id));
++
++                // Sync Posts
++                // Filter items with pictures for sync, or sync all? Previously filtered.
++                // We sync items that HAVE pictures to be consistent with previous logic
++                for (const post of rawPosts) {
++                    if (deletedIds.has(post.id)) continue; // Skip deleted posts
++
++                    try {
++                        const firstAttach = post.attachments?.data?.[0];
++                        if (firstAttach?.title === 'Attachment Unavailable' ||
++                            firstAttach?.title === 'Ez a tartalom jelenleg nem érhető el' ||
++                            post.message?.includes('Ez a tartalom jelenleg nem érhető el')) {
++                            continue;
++                        }
+ 
+-                            let enhancedAttachments = post.attachments;
+-
+-                            // Enhance Event Description
+-                            if (firstAttach && firstAttach.target?.id && (firstAttach.type === 'event' || firstAttach.type === 'native_templates')) {
+-                                console.log(`[Facebook Sync] Enhancing event ${firstAttach.target.id}`);
+-                                try {
+-                                    const eventRes = await fetch(
+-                                        `https://graph.facebook.com/v19.0/${firstAttach.target.id}?fields=description&access_token=${accessToken}`,
+-                                        { cache: 'no-store' }
+-                                    );
+-
+-                                    if (eventRes.ok) {
+-                                        const eventData = await eventRes.json();
+-                                        if (eventData.description) {
+-                                            console.log(`[Facebook Sync] Found description: ${eventData.description.substring(0, 20)}...`);
+-                                            // Deep copy to ensure modification sticks
+-                                            enhancedAttachments = JSON.parse(JSON.stringify(post.attachments));
+-                                            if (enhancedAttachments?.data?.[0]) {
+-                                                enhancedAttachments.data[0].description = eventData.description;
+-                                            }
++                        let enhancedAttachments = post.attachments;
++                        // const firstAttach = post.attachments?.data?.[0]; // Already declared above
++
++                        // Enhance Event Description
++                        if (firstAttach && firstAttach.target?.id && (firstAttach.type === 'event' || firstAttach.type === 'native_templates')) {
++                            console.log(`[Facebook Sync] Enhancing event ${firstAttach.target.id}`);
++                            try {
++                                const eventRes = await fetch(
++                                    `https://graph.facebook.com/v19.0/${firstAttach.target.id}?fields=description&access_token=${accessToken}`,
++                                    { cache: 'no-store' }
++                                );
++
++                                if (eventRes.ok) {
++                                    const eventData = await eventRes.json();
++                                    if (eventData.description) {
++                                        console.log(`[Facebook Sync] Found description: ${eventData.description.substring(0, 20)}...`);
++                                        // Deep copy to ensure modification sticks
++                                        enhancedAttachments = JSON.parse(JSON.stringify(post.attachments));
++                                        if (enhancedAttachments?.data?.[0]) {
++                                            enhancedAttachments.data[0].description = eventData.description;
+                                         }
+                                     }
+-                                } catch (e) {
+-                                    console.error('[Facebook Sync] Event fetch error', e);
+                                 }
++                            } catch (e) {
++                                console.error('[Facebook Sync] Event fetch error', e);
+                             }
++                        }
+ 
+-                            const existing = await prisma.facebookPost.findUnique({
+-                                where: { id: post.id },
+-                                select: { messageEn: true }
+-                            });
+-
+-                            let localPath: string | null = null;
+-                            if (post.full_picture) {
+-                                localPath = await downloadFacebookImage(post.full_picture, post.id, 'posts');
+-                            }
++                        const existing = await prisma.facebookPost.findUnique({
++                            where: { id: post.id },
++                            select: { messageEn: true }
++                        });
+ 
+-                            // Automatic Translation - ONLY if missing
+-                            const messageEn = existing?.messageEn || await translateText(post.message || '', 'en');
+-
+-                            await prisma.facebookPost.upsert({
+-                                where: { id: post.id },
+-                                create: {
+-                                    id: post.id,
+-                                    message: post.message,
+-                                    messageEn: messageEn,
+-                                    createdTime: new Date(post.created_time),
+-                                    fullPicture: post.full_picture,
+-                                    localImagePath: localPath,
+-                                    permalinkUrl: post.permalink_url,
+-                                    likes: post.likes?.summary?.total_count || 0,
+-                                    attachments: enhancedAttachments ? JSON.stringify(enhancedAttachments) : null
+-                                },
+-                                update: {
+-                                    message: post.message,
+-                                    messageEn: messageEn,
+-                                    likes: post.likes?.summary?.total_count || 0,
+-                                    permalinkUrl: post.permalink_url,
+-                                    attachments: enhancedAttachments ? JSON.stringify(enhancedAttachments) : null,
+-                                    ...(localPath ? { localImagePath: localPath } : {}),
+-                                }
+-                            });
+-                            
+-                            await new Promise(r => setTimeout(r, 600)); // Delay to avoid 429
+-                        } catch (err) {
+-                            console.error(`[Facebook Sync] Error syncing post ${post.id}:`, err);
++                        let localPath: string | null = null;
++                        if (post.full_picture) {
++                            localPath = await downloadFacebookImage(post.full_picture, post.id, 'posts');
+                         }
++
++                        // Automatic Translation - ONLY if missing
++                        const messageEn = existing?.messageEn || await translateText(post.message || '', 'en');
++
++                        await prisma.facebookPost.upsert({
++                            where: { id: post.id },
++                            create: {
++                                id: post.id,
++                                message: post.message,
++                                messageEn: messageEn,
++                                createdTime: new Date(post.created_time),
++                                fullPicture: post.full_picture,
++                                localImagePath: localPath,
++                                permalinkUrl: post.permalink_url,
++                                likes: post.likes?.summary?.total_count || 0,
++                                attachments: enhancedAttachments ? JSON.stringify(enhancedAttachments) : null
++                            },
++                            update: {
++                                message: post.message,
++                                messageEn: messageEn,
++                                likes: post.likes?.summary?.total_count || 0,
++                                permalinkUrl: post.permalink_url,
++                                attachments: enhancedAttachments ? JSON.stringify(enhancedAttachments) : null,
++                                ...(localPath ? { localImagePath: localPath } : {}),
++                            }
++                        });
++                        
++                        if (shouldSync) await new Promise(r => setTimeout(r, 600)); // Delay to avoid 429
++                    } catch (err) {
++                        console.error(`[Facebook Sync] Error syncing post ${post.id}:`, err);
+                     }
+-                } else {
+-                    const errorData = await postsRes.json().catch(() => ({}));
+-                    console.error(`[Facebook Sync] API Error: ${postsRes.status} ${postsRes.statusText}`, errorData);
+                 }
++            } else {
++                const errorData = await postsRes.json().catch(() => ({}));
++                console.error(`[Facebook Sync] API Error: ${postsRes.status} ${postsRes.statusText}`, errorData);
++            }
+ 
+-                if (pictureRes.ok) {
+-                    const pictureData = await pictureRes.json();
+-                    const url = pictureData.data?.url;
+-                    if (url) {
+-                        const localPath = await downloadFacebookImage(url, 'profile-pic', 'system');
+-                        profilePicture = localPath || url;
+-                    }
++            if (pictureRes.ok) {
++                const pictureData = await pictureRes.json();
++                const url = pictureData.data?.url;
++                if (url) {
++                    const localPath = await downloadFacebookImage(url, 'profile-pic', 'system');
++                    profilePicture = localPath || url;
+                 }
+-            } catch (error) {
+-                console.error("Sync failed:", error);
+             }
+-        };
+ 
+-        if (awaitSync) {
+-            await syncFn();
+-        } else {
+-            console.log("[Facebook] Triggering background non-blocking sync since DB has records...");
+-            syncFn().catch(e => console.error("Background sync error:", e));
++        } catch (error) {
++            console.error("Sync failed:", error);
+         }
+     }
+ 

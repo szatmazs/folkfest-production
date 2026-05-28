@@ -1,0 +1,296 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model FacebookPost {
+  id             String   @id
+  message        String?
+  messageEn      String?  @map("message_en")
+  createdTime    DateTime @map("created_time")
+  fullPicture    String?  @map("full_picture")
+  localImagePath String?  @map("local_image_path")
+  permalinkUrl   String?  @map("permalink_url")
+  likes          Int      @default(0)
+  videoUrl       String?  @map("video_url")
+  attachments    String? 
+  updatedAt      DateTime @updatedAt
+  
+  customTitle    String?  @map("custom_title")
+  customTitleEn  String?  @map("custom_title_en")
+  isVisible      Boolean  @default(true) @map("is_visible")
+  showInCarousel Boolean  @default(true) @map("show_in_carousel")
+}
+
+model FacebookEvent {
+  id             String    @id
+  name           String
+  nameEn         String?   @map("name_en")
+  description    String?
+  descriptionEn  String?   @map("description_en")
+  startTime      DateTime  @map("start_time")
+  endTime        DateTime? @map("end_time")
+  coverUrl       String?   @map("cover_url")
+  localCoverPath String?   @map("local_cover_path")
+  place          String?
+  placeEn        String?   @map("place_en")
+  updatedAt      DateTime  @updatedAt
+
+  isVisible      Boolean   @default(true) @map("is_visible")
+}
+
+model Project {
+  id            String   @id @default(uuid())
+  title         String
+  titleEn       String?  @map("title_en")
+  slug          String   @unique
+  slugEn        String?  @unique @map("slug_en")
+  mainImage     String?  @map("main_image")
+  sponsorLogo   String?  @map("sponsor_logo")
+  sponsorLogoEn String?  @map("sponsor_logo_en")
+  description   String?
+  descriptionEn String?  @map("description_en")
+  projectData   String?  @map("project_data")
+  content       String? 
+  contentEn     String?  @map("content_en")
+  startDate     DateTime @default(now()) @map("start_date")
+  endDate       DateTime? @map("end_date")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  partners    ProjectPartner[]
+  results     ProjectResult[]
+}
+
+model ProjectPartner {
+  id        String  @id @default(uuid())
+  projectId String  @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  link      String?
+  logoUrl   String? @map("logo_url")
+  country   String?
+}
+
+model ProjectResult {
+  id        String  @id @default(uuid())
+  projectId String  @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type      String  // "text" | "file"
+  label     String?
+  labelEn   String? @map("label_en")
+  content   String?
+  contentEn String? @map("content_en")
+}
+
+model Page {
+  id        String   @id @default(uuid())
+  title     String
+  titleEn   String?  @map("title_en")
+  slug      String   @unique
+  slugEn    String?  @unique @map("slug_en")
+  content   String?
+  contentEn String?  @map("content_en")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Hero Fields
+  heroType          String   @default("small") @map("hero_type")
+  heroImage         String?  @map("hero_image")
+  heroTitle         String?  @map("hero_title")
+  heroTitleEn       String?  @map("hero_title_en")
+  heroSubtitle      String?  @map("hero_subtitle")
+  heroSubtitleEn    String?  @map("hero_subtitle_en")
+  heroLogo          String?  @map("hero_logo")
+  heroButtonLabel   String?  @map("hero_button_label")
+  heroButtonLabelEn String?  @map("hero_button_label_en")
+  heroButtonLink    String?  @map("hero_button_link")
+  heroLogoSize      String   @default("medium") @map("hero_logo_size")
+  heroShowTitle     Boolean  @default(true) @map("hero_show_title")
+}
+
+model Video {
+  id            String   @id @default(uuid())
+  title         String?
+  titleEn       String?  @map("title_en")
+  videoUrl      String   @map("video_url")
+  thumbnailUrl  String?  @map("thumbnail_url")
+  description   String?
+  descriptionEn String?  @map("description_en")
+  featured      Boolean  @default(false)
+  publishedAt   DateTime @default(now()) @map("published_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+}
+
+model HomeSettings {
+  id                    Int      @id @default(1)
+  heroSubtitle          String?  @map("hero_subtitle")
+  heroSubtitleEn        String?  @map("hero_subtitle_en")
+  heroTitle             String?  @map("hero_title")
+  heroTitleEn           String?  @map("hero_title_en")
+  heroTitleHighlight    String?  @map("hero_title_highlight")
+  heroTitleHighlightEn  String?  @map("hero_title_highlight_en")
+
+  heroLeftButtonLabel   String?  @default("Események") @map("hero_left_button_label")
+  heroLeftButtonLabelEn String?  @map("hero_left_button_label_en")
+  heroLeftButtonLink    String?  @default("/events") @map("hero_left_button_link")
+  heroRightButtonLabel  String?  @default("Rólunk") @map("hero_right_button_label")
+  heroRightButtonLabelEn String? @map("hero_right_button_label_en")
+  heroRightButtonLink   String?  @default("/about") @map("hero_right_button_link")
+
+  heroDescription       String?  @map("hero_description")
+  heroDescriptionEn     String?  @map("hero_description_en")
+  missionTitle          String?  @map("mission_title")
+  missionTitleEn        String?  @map("mission_title_en")
+  missionDescription    String?  @map("mission_description")
+  missionDescriptionEn  String?  @map("mission_description_en")
+  activitiesTitle       String?  @map("activities_title")
+  activitiesTitleEn     String?  @map("activities_title_en")
+  
+  sections              String?  // JSON field for dynamic sections: order, visibility, custom fields
+  
+  updatedAt             DateTime @updatedAt @map("updated_at")
+}
+
+model DeletedFacebookPost {
+  id        String   @id
+  deletedAt DateTime @default(now()) @map("deleted_at")
+}
+
+model MenuItem {
+  id        String   @id @default(uuid())
+  label     String
+  labelEn   String?  @map("label_en")
+  path      String
+  order     Int      @default(0)
+  target    String   @default("_self") // _self or _blank
+  isVisible Boolean  @default(true) @map("is_visible")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model Release {
+  id             String   @id @default(cuid())
+  artist         String
+  title          String
+  titleEn        String?  @map("title_en")
+  year           Int
+  coverUrl       String
+  promoLink      String?
+  tracklist      String   // JSON string: ["Track 1", "Track 2"]
+  streamingLinks String   // JSON string: { spotify: "url", apple: "url", ... }
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Partner {
+  id         String   @id @default(uuid())
+  name       String
+  logoUrl    String   @map("logo_url")
+  websiteUrl String?  @map("website_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+}
+
+model ContactBlock {
+  id        String   @id @default(uuid())
+  title     String
+  titleEn   String?  @map("title_en")
+  icon      String   // MapPin, Mail, Phone, Globe, etc.
+  content   String   // Can be rich text
+  contentEn String?  @map("content_en")
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model ContactSettings {
+  id              Int      @id @default(1)
+  recipientEmails String?  @map("recipient_emails") // Comma separated list
+  footerInfo      String?  @map("footer_info")      // "Adatok" field with WYSYWIG
+  footerInfoEn    String?  @map("footer_info_en")
+  
+  // Hero Fields
+  heroImage       String?  @map("hero_image")
+  heroTitle       String?  @map("hero_title")
+  heroTitleEn     String?  @map("hero_title_en")
+  heroSubtitle    String?  @map("hero_subtitle")
+  heroSubtitleEn  String?  @map("hero_subtitle_en")
+
+  // SMTP Settings
+  smtpHost        String?  @map("smtp_host")
+  smtpPort        Int?     @map("smtp_port")
+  smtpUser        String?  @map("smtp_user")
+  smtpPassword    String?  @map("smtp_password")
+  smtpSecure      Boolean  @default(true) @map("smtp_secure")
+  smtpFromEmail   String?  @map("smtp_from_email")
+  smtpFromName    String?  @map("smtp_from_name")
+  
+  updatedAt       DateTime @updatedAt @map("updated_at")
+}
+
+model FooterSettings {
+  id              Int      @id @default(1)
+  
+  brandContent    String?  @map("brand_content")
+  brandContentEn  String?  @map("brand_content_en")
+  contactContent  String?  @map("contact_content")
+  contactContentEn String? @map("contact_content_en")
+  socialContent   String?  @map("social_content")
+  socialContentEn String?  @map("social_content_en")
+  bottomText      String?  @map("bottom_text")
+  bottomTextEn    String?  @map("bottom_text_en")
+
+  updatedAt       DateTime @updatedAt @map("updated_at")
+}
+
+model HeroSlide {
+  id               String   @id @default(cuid())
+  isActive         Boolean  @default(true)
+  order            Int      @default(0)
+  
+  backgroundType   String   @default("image") // 'image', 'video', 'youtube'
+  
+  imageUrl         String?
+  videoUrl         String?
+  
+  youtubeUrl       String?
+  youtubeStart     Int?     @default(0)
+  youtubeEnd       Int?     @default(0)
+
+  // Slide specific text content
+  logoUrl          String?
+  logoUrlEn        String?  @map("logo_url_en")
+  title            String?
+  titleEn          String?  @map("title_en")
+  subtitle         String?
+  subtitleEn       String?  @map("subtitle_en")
+  titleHighlight   String?
+  titleHighlightEn String?  @map("title_highlight_en")
+  leftButtonLabel  String?
+  leftButtonLabelEn String? @map("left_button_label_en")
+  leftButtonLink   String?
+  leftButtonIcon   String?
+  rightButtonLabel String?
+  rightButtonLabelEn String? @map("right_button_label_en")
+  rightButtonLink  String?
+  rightButtonIcon  String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("hero_slides")
+}

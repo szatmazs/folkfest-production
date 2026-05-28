@@ -1,0 +1,69 @@
+{
+  "common": {
+    "readMore": "Read more",
+    "contact": "Contact",
+    "events": "Events",
+    "about": "About Us",
+    "followUs": "Follow us",
+    "allRightsReserved": "All rights reserved",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "send": "Send",
+    "details": "Details",
+    "open_on_facebook": "Open on Facebook",
+    "close": "Close"
+  },
+  "navigation": {
+    "home": "Home",
+    "projects": "Projects",
+    "news": "News",
+    "videos": "Videos",
+    "releases": "Releases",
+    "support": "Support",
+    "contact": "Contact"
+  },
+  "footer": {
+    "brandDescription": "Cultural value creation, heritage preservation and talent management in the Carpathian Basin.",
+    "contact": "Contact",
+    "followUs": "Follow us"
+  },
+  "contact": {
+    "detailsTitle": "Contact Details",
+    "infoTitle": "Information",
+    "form": {
+      "title": "Send a Message",
+      "nameLabel": "Name",
+      "namePlaceholder": "Your name",
+      "emailLabel": "Email",
+      "subjectLabel": "Subject",
+      "subjectPlaceholder": "Message subject",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Describe your request...",
+      "sendButton": "Send",
+      "sending": "Sending...",
+      "successMessage": "Your message has been sent successfully! Our colleagues will contact you soon.",
+      "errorMessage": "An error occurred during sending.",
+      "networkError": "A network error occurred."
+    }
+  },
+  "releases": {
+    "title": "Releases",
+    "subtitle": "Releases of the FolkFest Cultural Association",
+    "details": "Details",
+    "tracks": "Tracklist",
+    "streaming": "Listen"
+  },
+  "videos": {
+    "title": "Video Gallery",
+    "subtitle": "Watch our latest videos",
+    "close": "Close"
+  },
+  "projects": {
+    "title": "Projects",
+    "subtitle": "Our heritage preservation and talent management programs",
+    "details": "Details",
+    "partners": "Partners",
+    "results": "Results"
+  }
+}

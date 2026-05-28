@@ -1,0 +1,447 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Project, ProjectPartner, ProjectResult, Partner } from '@prisma/client'
+import { createProject, updateProject } from '@/app/actions/project-admin'
+import { getPartners } from '@/app/actions/partner-admin'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft, Save, Loader2, Image as ImageIcon, Plus, Trash2, Link as LinkIcon, FileText, Upload } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import Image from 'next/image'
+
+type ExtendedProject = Project & {
+    partners: ProjectPartner[]
+    results: ProjectResult[]
+}
+
+export function ProjectForm({ project }: { project?: ExtendedProject }) {
+    const [isLoading, setIsLoading] = useState(false)
+    const [preview, setPreview] = useState<string | null>(project?.mainImage || null)
+    const router = useRouter()
+
+    const [availablePartners, setAvailablePartners] = useState<Partner[]>([])
+
+    useEffect(() => {
+        getPartners().then(setAvailablePartners)
+    }, [])
+
+    const [description, setDescription] = useState(project?.description || '')
+    const [mainImageFile, setMainImageFile] = useState<File | null>(null)
+    const [projectData, setProjectData] = useState(project?.projectData || '')
+
+    const convertImageToGrayscale = (file: File): Promise<File> => {
+        return new Promise((resolve, reject) => {
+            const img = new window.Image()
+            const url = URL.createObjectURL(file)
+            img.onload = () => {
+                const canvas = document.createElement('canvas')
+                canvas.width = img.width
+                canvas.height = img.height
+                const ctx = canvas.getContext('2d')
+                if (!ctx) {
+                    URL.revokeObjectURL(url)
+                    return reject('No context')
+                }
+                ctx.drawImage(img, 0, 0)
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+                const data = imageData.data
+                for (let i = 0; i < data.length; i += 4) {
+                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3
+                    data[i] = avg
+                    data[i + 1] = avg
+                    data[i + 2] = avg
+                }
+                ctx.putImageData(imageData, 0, 0)
+                canvas.toBlob((blob) => {
+                    URL.revokeObjectURL(url)
+                    if (blob) {
+                        resolve(new File([blob], file.name, { type: file.type }))
+                    } else {
+                        reject('Canvas blob failed')
+                    }
+                }, file.type)
+            }
+            img.onerror = (e) => {
+                URL.revokeObjectURL(url)
+                reject(e)
+            }
+            img.src = url
+        })
+    }
+
+    const [partners, setPartners] = useState<{ name: string, link: string, country: string, logoUrl: string, file: File | null }[]>(
+        project?.partners?.map(p => ({
+            name: p.name, link: p.link || '', country: p.country || '', logoUrl: p.logoUrl || '', file: null
+        })) || []
+    )
+
+    const [results, setResults] = useState<{ type: string, label: string, content: string, file: File | null }[]>(
+        project?.results?.map(r => ({
+            type: r.type, label: r.label || '', content: r.content || '', file: null
+        })) || []
+    )
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        setIsLoading(true)
+
+        const formData = new FormData(e.currentTarget)
+        formData.set('description', description)
+        formData.set('projectData', projectData)
+
+        if (mainImageFile) {
+            formData.set('image', mainImageFile)
+        }
+
+        // Process Partners
+        partners.forEach((p, index) => {
+            formData.append(`partners[${index}][name]`, p.name)
+            formData.append(`partners[${index}][link]`, p.link)
+            formData.append(`partners[${index}][country]`, p.country)
+            if (p.file) {
+                formData.append(`partners[${index}][logo]`, p.file)
+            } else if (p.logoUrl) {
+                formData.append(`partners[${index}][existingLogo]`, p.logoUrl)
+            }
+        })
+
+        // Process Results
+        results.forEach((r, index) => {
+            formData.append(`results[${index}][type]`, r.type)
+            formData.append(`results[${index}][label]`, r.label)
+
+            // For file type, prioritize new file, else use existing content (url)
+            if (r.type === 'file' && r.file) {
+                formData.append(`results[${index}][file]`, r.file)
+            }
+            formData.append(`results[${index}][content]`, r.content)
+        })
+
+        try {
+            if (project) {
+                await updateProject(project.id, formData)
+            } else {
+                await createProject(formData)
+            }
+            router.push('/admin/projects')
+            router.refresh()
+        } catch (error) {
+            console.error(error)
+            alert('Hiba történt a mentés során')
+            setIsLoading(false)
+        }
+    }
+
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            try {
+                const grayscaleFile = await convertImageToGrayscale(file)
+                setMainImageFile(grayscaleFile)
+                const url = URL.createObjectURL(grayscaleFile)
+                setPreview(url)
+            } catch (error) {
+                console.error('Grayscale conversion failed:', error)
+                // Fallback
+                const url = URL.createObjectURL(file)
+                setPreview(url)
+            }
+        }
+    }
+
+    const addPartner = () => setPartners([...partners, { name: '', link: '', country: '', logoUrl: '', file: null }])
+    const removePartner = (index: number) => setPartners(partners.filter((_, i) => i !== index))
+    const updatePartner = (index: number, field: string, value: any) => {
+        const newPartners = [...partners]
+        // @ts-ignore
+        newPartners[index][field] = value
+        setPartners(newPartners)
+    }
+
+    const addResult = () => setResults([...results, { type: 'text', label: '', content: '', file: null }])
+    const removeResult = (index: number) => setResults(results.filter((_, i) => i !== index))
+    const updateResult = (index: number, field: string, value: any) => {
+        const newResults = [...results]
+        // @ts-ignore
+        newResults[index][field] = value
+        setResults(newResults)
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="max-w-5xl mx-auto pb-20 space-y-12">
+            {/* Header */}
+            <div className="flex items-center justify-between sticky top-0 bg-gray-50 z-10 py-4 border-b">
+                <div className="flex items-center gap-4">
+                    <Link href="/admin/projects">
+                        <Button variant="ghost" size="icon" type="button">
+                            <ArrowLeft className="w-5 h-5" />
+                        </Button>
+                    </Link>
+                    <h1 className="text-2xl font-bold text-gray-800">
+                        {project ? 'Projekt Szerkesztése' : 'Új Projekt Létrehozása'}
+                    </h1>
+                </div>
+                <Button type="submit" disabled={isLoading} className="bg-black text-white hover:bg-gray-800 gap-2">
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Mentés
+                </Button>
+            </div>
+
+            {/* 1. Cím */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Projekt Címe</label>
+                <input
+                    name="title"
+                    defaultValue={project?.title}
+                    required
+                    className="w-full text-lg font-bold border rounded px-4 py-3 focus:ring-2 focus:ring-blue-100 outline-none"
+                    placeholder="Projekt címe"
+                />
+            </div>
+
+            {/* 2. Projekt Adatok */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Projekt Adatok</label>
+                <RichTextEditor content={projectData} onChange={setProjectData} className="min-h-[200px]" />
+            </div>
+
+            {/* 3. Partnerek */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+                <div className="flex justify-between items-center mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Partnerek</label>
+                    <div className="flex gap-2 items-center">
+                        <select
+                            className="border rounded px-2 py-1.5 text-sm w-[200px] outline-none focus:ring-2 focus:ring-blue-100"
+                            onChange={(e) => {
+                                const p = availablePartners.find(ap => ap.id === e.target.value)
+                                if (p) {
+                                    setPartners([...partners, {
+                                        name: p.name,
+                                        link: p.websiteUrl || '',
+                                        country: '',
+                                        logoUrl: p.logoUrl,
+                                        file: null
+                                    }])
+                                    e.target.value = "" // Reset select
+                                }
+                            }}
+                            defaultValue=""
+                        >
+                            <option value="" disabled>Válassz listából...</option>
+                            {availablePartners.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                        <Button type="button" variant="outline" size="sm" onClick={addPartner} className="gap-2">
+                            <Plus className="w-4 h-4" /> Új
+                        </Button>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    {partners.map((partner, index) => (
+                        <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border rounded bg-gray-50 items-start">
+                            <div className="md:col-span-3">
+                                <label className="text-xs font-semibold text-gray-500 mb-1 block">Logó</label>
+                                <div className="relative h-24 w-full bg-white border border-dashed rounded flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:border-blue-400">
+                                    {(partner.file || partner.logoUrl) ? (
+                                        <img
+                                            src={partner.file ? URL.createObjectURL(partner.file) : partner.logoUrl}
+                                            className="h-full w-full object-contain p-2"
+                                            alt="Logo"
+                                        />
+                                    ) : (
+                                        <span className="text-xs text-center p-2 text-gray-400">Kattints a feltöltéshez</span>
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        onChange={(e) => updatePartner(index, 'file', e.target.files?.[0])}
+                                    />
+                                </div>
+                            </div>
+                            <div className="md:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Név</label>
+                                    <input
+                                        value={partner.name}
+                                        onChange={(e) => updatePartner(index, 'name', e.target.value)}
+                                        className="w-full border rounded px-2 py-1.5 text-sm"
+                                        placeholder="Partner neve"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Ország</label>
+                                    <input
+                                        value={partner.country}
+                                        onChange={(e) => updatePartner(index, 'country', e.target.value)}
+                                        className="w-full border rounded px-2 py-1.5 text-sm"
+                                        placeholder="Ország"
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Link</label>
+                                    <input
+                                        value={partner.link}
+                                        onChange={(e) => updatePartner(index, 'link', e.target.value)}
+                                        className="w-full border rounded px-2 py-1.5 text-sm"
+                                        placeholder="Weboldal URL"
+                                    />
+                                </div>
+                            </div>
+                            <div className="md:col-span-1 flex justify-end">
+                                <Button type="button" variant="ghost" size="sm" onClick={() => removePartner(index)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+                    {partners.length === 0 && <p className="text-sm text-gray-400 text-center py-4">Nincs partner hozzáadva.</p>}
+                </div>
+            </div>
+
+            {/* 4. Leírás */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Leírás</label>
+                <RichTextEditor content={description} onChange={setDescription} className="min-h-[300px]" />
+            </div>
+
+            {/* 5. Eredmények */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+                <div className="flex justify-between items-center mb-4">
+                    <label className="block text-sm font-medium text-gray-700">Eredmények</label>
+                    <Button type="button" variant="outline" size="sm" onClick={addResult} className="gap-2">
+                        <Plus className="w-4 h-4" /> Eredmény Hozzáadása
+                    </Button>
+                </div>
+
+                <div className="space-y-4">
+                    {results.map((result, index) => (
+                        <div key={index} className="flex flex-col md:flex-row gap-4 p-4 border rounded bg-gray-50 items-start">
+                            <div className="w-full md:w-32">
+                                <label className="text-xs font-semibold text-gray-500 mb-1 block">Típus</label>
+                                <select
+                                    value={result.type}
+                                    onChange={(e) => updateResult(index, 'type', e.target.value)}
+                                    className="w-full border rounded px-2 py-1.5 text-sm"
+                                >
+                                    <option value="text">Szöveg</option>
+                                    <option value="file">Fájl</option>
+                                    <option value="video">Videó (YouTube)</option>
+                                </select>
+                            </div>
+                            <div className="flex-1 space-y-2 w-full">
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Címke / Név</label>
+                                    <input
+                                        value={result.label}
+                                        onChange={(e) => updateResult(index, 'label', e.target.value)}
+                                        className="w-full border rounded px-2 py-1.5 text-sm"
+                                        placeholder="pl. Jelentés 2024"
+                                    />
+                                </div>
+                                <div>
+                                    {result.type === 'text' ? (
+                                        <>
+                                            <label className="text-xs font-semibold text-gray-500 mb-1 block">Szöveges Tartalom</label>
+                                            <input
+                                                value={result.content}
+                                                onChange={(e) => updateResult(index, 'content', e.target.value)}
+                                                className="w-full border rounded px-2 py-1.5 text-sm"
+                                                placeholder="Tartalom..."
+                                            />
+                                        </>
+                                    ) : result.type === 'video' ? (
+                                        <>
+                                            <label className="text-xs font-semibold text-gray-500 mb-1 block">YouTube Link</label>
+                                            <input
+                                                value={result.content}
+                                                onChange={(e) => updateResult(index, 'content', e.target.value)}
+                                                className="w-full border rounded px-2 py-1.5 text-sm"
+                                                placeholder="https://www.youtube.com/watch?v=..."
+                                            />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <label className="text-xs font-semibold text-gray-500 mb-1 block">Fájl</label>
+                                            <div className="flex items-center gap-4">
+                                                <input
+                                                    type="file"
+                                                    onChange={(e) => updateResult(index, 'file', e.target.files?.[0])}
+                                                    className="border rounded px-2 py-1.5 text-sm flex-1 bg-white"
+                                                />
+                                                {result.content && !result.file && (
+                                                    <a href={result.content} target="_blank" className="text-xs text-blue-600 underline truncate max-w-[200px]">
+                                                        Jelenlegi fájl
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="md:self-center">
+                                <Button type="button" variant="ghost" size="sm" onClick={() => removeResult(index)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+                    {results.length === 0 && <p className="text-sm text-gray-400 text-center py-4">Nincs eredmény hozzáadva.</p>}
+                </div>
+            </div>
+
+            {/* 6. Kép és Beállítások */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+                <h3 className="font-semibold mb-4 text-gray-900">Kép és Beállítások</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Kiemelt Kép</label>
+                        <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative group border-2 border-dashed border-gray-200 hover:border-blue-400 transition-colors">
+                            {preview ? (
+                                <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                    <ImageIcon className="w-8 h-8 mb-2" />
+                                    <span className="text-xs">Nincs kép kiválasztva</span>
+                                </div>
+                            )}
+
+                            <input
+                                type="file"
+                                name="image"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Kezdő dátum</label>
+                            <input
+                                type="date"
+                                name="startDate"
+                                defaultValue={project?.startDate ? new Date(project.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                                className="w-full border rounded px-3 py-2"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Befejező dátum (opcionális)</label>
+                            <input
+                                type="date"
+                                name="endDate"
+                                defaultValue={project?.endDate ? new Date(project.endDate).toISOString().split('T')[0] : ''}
+                                className="w-full border rounded px-3 py-2"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    )
+}
