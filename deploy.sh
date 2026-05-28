@@ -14,7 +14,7 @@ git pull origin main || { echo -e "${RED}Git pull failed${NC}"; exit 1; }
 
 # Dependencies
 echo -e "${YELLOW}Installing dependencies...${NC}"
-npm install --production || { echo -e "${RED}npm install failed${NC}"; exit 1; }
+npm install --include=dev || { echo -e "${RED}npm install failed${NC}"; exit 1; }
 
 # Prisma
 echo -e "${YELLOW}Generating Prisma Client...${NC}"

@@ -274,7 +274,7 @@ export async function getFacebookPosts(options: { forceRefresh?: boolean } = {})
         const syncFn = async () => {
             try {
                 const fields = "id,message,created_time,full_picture,permalink_url,likes.summary(true),status_type,attachments{title,description,url,type,media,target{id,url}}";
-                const postsUrl = `https://graph.facebook.com/v19.0/${pageId}/posts?fields=${fields}&access_token=${accessToken}&limit=100`;
+                const postsUrl = `https://graph.facebook.com/v19.0/${pageId}/posts?fields=${fields}&access_token=${accessToken}&limit=10`;
                 const pictureUrl = `https://graph.facebook.com/v19.0/${pageId}/picture?type=large&redirect=false&access_token=${accessToken}`;
 
                 const fetchOptions: RequestInit = { cache: 'no-store' };
@@ -308,11 +308,13 @@ export async function getFacebookPosts(options: { forceRefresh?: boolean } = {})
                             }
 
                             let enhancedAttachments = post.attachments;
+                            let hadNetworkCall = false;
 
                             // Enhance Event Description
                             if (firstAttach && firstAttach.target?.id && (firstAttach.type === 'event' || firstAttach.type === 'native_templates')) {
                                 console.log(`[Facebook Sync] Enhancing event ${firstAttach.target.id}`);
                                 try {
+                                    hadNetworkCall = true;
                                     const eventRes = await fetch(
                                         `https://graph.facebook.com/v19.0/${firstAttach.target.id}?fields=description&access_token=${accessToken}`,
                                         { cache: 'no-store' }
@@ -341,11 +343,26 @@ export async function getFacebookPosts(options: { forceRefresh?: boolean } = {})
 
                             let localPath: string | null = null;
                             if (post.full_picture) {
-                                localPath = await downloadFacebookImage(post.full_picture, post.id, 'posts');
+                                // Check if we need to download (downloadFacebookImage checks if exists internally but we still count it)
+                                const publicDir = path.join(process.cwd(), 'public');
+                                const targetPath = path.join(publicDir, 'uploads', 'posts', `${post.id}${post.full_picture.includes('.png') ? '.png' : '.jpg'}`);
+                                
+                                try {
+                                    const fsNode = await import('fs/promises');
+                                    await fsNode.access(targetPath);
+                                    localPath = `/uploads/posts/${post.id}${post.full_picture.includes('.png') ? '.png' : '.jpg'}`;
+                                } catch {
+                                    hadNetworkCall = true;
+                                    localPath = await downloadFacebookImage(post.full_picture, post.id, 'posts');
+                                }
                             }
 
                             // Automatic Translation - ONLY if missing
-                            const messageEn = existing?.messageEn || await translateText(post.message || '', 'en');
+                            let messageEn = existing?.messageEn;
+                            if (!messageEn) {
+                                hadNetworkCall = true;
+                                messageEn = await translateText(post.message || '', 'en');
+                            }
 
                             await prisma.facebookPost.upsert({
                                 where: { id: post.id },
@@ -370,7 +387,9 @@ export async function getFacebookPosts(options: { forceRefresh?: boolean } = {})
                                 }
                             });
                             
-                            await new Promise(r => setTimeout(r, 600)); // Delay to avoid 429
+                            if (hadNetworkCall) {
+                                await new Promise(r => setTimeout(r, 600)); // Delay only to avoid 429 when network calls were made
+                            }
                         } catch (err) {
                             console.error(`[Facebook Sync] Error syncing post ${post.id}:`, err);
                         }

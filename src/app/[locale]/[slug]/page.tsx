@@ -29,6 +29,31 @@ async function getPage(slug: string) {
     });
 }
 
+function extractTextFromBlocks(content: string | null): string {
+    if (!content) return "";
+    try {
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+            let text = "";
+            for (const block of parsed) {
+                if (block.type === "text" || block.type === "heading" || block.type === "icon-text") {
+                    if (block.content) text += " " + block.content;
+                } else if (block.type === "support-card") {
+                    if (block.content) text += " " + block.content;
+                } else if (block.type === "support-card-group" && Array.isArray(block.blocks)) {
+                    for (const card of block.blocks) {
+                        if (card.content) text += " " + card.content;
+                    }
+                }
+            }
+            return text.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+        }
+    } catch (e) {
+        // Fallback
+    }
+    return content.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+}
+
 export async function generateMetadata({ params }: PageProps) {
     const { slug, locale } = await params;
     const isEn = locale === 'en';
@@ -43,8 +68,8 @@ export async function generateMetadata({ params }: PageProps) {
     const title = isEn ? (page.titleEn || page.title) : page.title;
     const rawContent = isEn ? (page.contentEn || page.content) : page.content;
     
-    // Clean html tags and limit length of description
-    const cleanText = rawContent ? rawContent.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim() : "";
+    // Clean JSON blocks and html tags and limit length of description
+    const cleanText = extractTextFromBlocks(rawContent);
     const description = cleanText 
         ? (cleanText.length > 150 ? cleanText.substring(0, 150) + "..." : cleanText)
         : (isEn ? "Read more about this page." : "Tudjon meg többet erről az oldalról.");

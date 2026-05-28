@@ -29,6 +29,31 @@ async function getProject(slug: string) {
     });
 }
 
+function extractTextFromBlocks(content: string | null): string {
+    if (!content) return "";
+    try {
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+            let text = "";
+            for (const block of parsed) {
+                if (block.type === "text" || block.type === "heading" || block.type === "icon-text") {
+                    if (block.content) text += " " + block.content;
+                } else if (block.type === "support-card") {
+                    if (block.content) text += " " + block.content;
+                } else if (block.type === "support-card-group" && Array.isArray(block.blocks)) {
+                    for (const card of block.blocks) {
+                        if (card.content) text += " " + card.content;
+                    }
+                }
+            }
+            return text.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+        }
+    } catch (e) {
+        // Fallback
+    }
+    return content.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+}
+
 export async function generateMetadata({ params }: ProjectPageProps) {
     const { slug, locale } = await params;
     const isEn = locale === 'en';
@@ -43,13 +68,11 @@ export async function generateMetadata({ params }: ProjectPageProps) {
     const title = isEn ? (project.titleEn || project.title) : project.title;
     const rawDescription = isEn ? (project.descriptionEn || project.description) : project.description;
     
-    // Clean html tags and limit length of description
-    const cleanText = rawDescription ? rawDescription.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim() : "";
+    // Clean JSON blocks and html tags and limit length of description
+    const cleanText = extractTextFromBlocks(rawDescription);
     const description = cleanText 
         ? (cleanText.length > 150 ? cleanText.substring(0, 150) + "..." : cleanText)
         : (isEn ? "Learn more about this project." : "Ismerje meg közelebbről ezt a projektet.");
-
-    const imageUrl = project.mainImage || "/logo.png";
 
     return {
         title: `${title} | FolkFest`,
@@ -58,19 +81,21 @@ export async function generateMetadata({ params }: ProjectPageProps) {
             title: `${title} | FolkFest`,
             description,
             url: `https://folkfest.hu/${locale}/projects/${slug}`,
+            type: "article",
             images: [
                 {
-                    url: imageUrl,
+                    url: `/api/og/project/${slug}?locale=${locale}`,
+                    width: 1200,
+                    height: 630,
                     alt: title,
                 }
             ],
-            type: "article",
         },
         twitter: {
             card: "summary_large_image",
             title: `${title} | FolkFest`,
             description,
-            images: [imageUrl],
+            images: [`/api/og/project/${slug}?locale=${locale}`],
         }
     };
 }

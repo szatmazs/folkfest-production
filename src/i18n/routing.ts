@@ -31,9 +31,13 @@ export const routing = defineRouting({
       hu: '/projektek',
       en: '/projects'
     },
-    '/projects/[slug]': {
+        '/projects/[slug]': {
       hu: '/projektek/[slug]',
       en: '/projects/[slug]'
+    },
+    '/projects/[slug]/opengraph-image': {
+      hu: '/projektek/[slug]/opengraph-image',
+      en: '/projects/[slug]/opengraph-image'
     }
   }
 });
