@@ -22,6 +22,12 @@ export function PageForm({ page }: { page?: Page }) {
     const [titleEn, setTitleEn] = useState(page?.titleEn || '')
     const [content, setContent] = useState(page?.content || '[]')
     const [contentEn, setContentEn] = useState(page?.contentEn || '[]')
+
+    const [initialTitle, setInitialTitle] = useState(page?.title || '')
+    const [initialContent, setInitialContent] = useState(page?.content || '[]')
+    const [initialHeroTitle, setInitialHeroTitle] = useState(page?.heroTitle || '')
+    const [initialHeroSubtitle, setInitialHeroSubtitle] = useState(page?.heroSubtitle || '')
+    const [initialHeroButtonLabel, setInitialHeroButtonLabel] = useState(page?.heroButtonLabel || '')
     
     // Non-localized basic fields
     const [slug, setSlug] = useState(page?.slug || '')
@@ -63,23 +69,23 @@ export function PageForm({ page }: { page?: Page }) {
         setIsTranslating('all')
         try {
             if (title) {
-                const t = await autoTranslatePageAction(title, titleEn, page?.title || undefined)
+                const t = await autoTranslatePageAction(title, titleEn, initialTitle || undefined)
                 setTitleEn(t)
             }
             if (heroTitle) {
-                const t = await autoTranslatePageAction(heroTitle, heroTitleEn, page?.heroTitle || undefined)
+                const t = await autoTranslatePageAction(heroTitle, heroTitleEn, initialHeroTitle || undefined)
                 setHeroTitleEn(t)
             }
             if (heroSubtitle) {
-                const t = await autoTranslatePageAction(heroSubtitle, heroSubtitleEn, page?.heroSubtitle || undefined)
+                const t = await autoTranslatePageAction(heroSubtitle, heroSubtitleEn, initialHeroSubtitle || undefined)
                 setHeroSubtitleEn(t)
             }
             if (heroButtonLabel) {
-                const t = await autoTranslatePageAction(heroButtonLabel, heroButtonLabelEn, page?.heroButtonLabel || undefined)
+                const t = await autoTranslatePageAction(heroButtonLabel, heroButtonLabelEn, initialHeroButtonLabel || undefined)
                 setHeroButtonLabelEn(t)
             }
             if (content && content !== '[]') {
-                const t = await autoTranslatePageAction(content, contentEn, page?.content || undefined)
+                const t = await autoTranslatePageAction(content, contentEn, initialContent || undefined)
                 setContentEn(t)
             }
         } catch (error) {
@@ -123,6 +129,11 @@ export function PageForm({ page }: { page?: Page }) {
         try {
             if (page) {
                 await updatePage(page.id, formData)
+                setInitialTitle(title)
+                setInitialContent(content)
+                setInitialHeroTitle(heroTitle)
+                setInitialHeroSubtitle(heroSubtitle)
+                setInitialHeroButtonLabel(heroButtonLabel)
             } else {
                 await createPage(formData)
                 router.push('/admin/pages')
@@ -266,7 +277,7 @@ export function PageForm({ page }: { page?: Page }) {
                                     size="sm" 
                                     className="gap-2 text-blue-600 border-blue-100 hover:bg-blue-50 h-7 text-[10px] uppercase font-bold"
                                     disabled={isTranslating === 'content'}
-                                    onClick={() => handleTranslate('content', content, setContentEn, contentEn, page?.content || undefined)}
+                                    onClick={() => handleTranslate('content', content, setContentEn, contentEn, initialContent || undefined)}
                                 >
                                     {isTranslating === 'content' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                                     Teljes tartalom fordítása
@@ -314,7 +325,7 @@ export function PageForm({ page }: { page?: Page }) {
                                     <div className="mt-2 pt-2 border-t">
                                         <div className="flex justify-between items-center mb-1">
                                             <label className="text-[10px] font-bold text-blue-600 uppercase">Title (EN)</label>
-                                            <button type="button" onClick={() => handleTranslate('heroTitle', heroTitle, setHeroTitleEn, heroTitleEn, page?.heroTitle || undefined)} className="text-[10px] text-gray-400 hover:text-blue-600">Auto</button>
+                                            <button type="button" onClick={() => handleTranslate('heroTitle', heroTitle, setHeroTitleEn, heroTitleEn, initialHeroTitle || undefined)} className="text-[10px] text-gray-400 hover:text-blue-600">Auto</button>
                                         </div>
                                         <input value={heroTitleEn} onChange={e => setHeroTitleEn(e.target.value)} className="w-full border rounded px-3 py-1.5 text-sm bg-white" placeholder="Opcionális" />
                                     </div>
@@ -326,7 +337,7 @@ export function PageForm({ page }: { page?: Page }) {
                                     <div className="mt-2 pt-2 border-t">
                                         <div className="flex justify-between items-center mb-1">
                                             <label className="text-[10px] font-bold text-blue-600 uppercase">Subtitle (EN)</label>
-                                            <button type="button" onClick={() => handleTranslate('heroSubtitle', heroSubtitle, setHeroSubtitleEn, heroSubtitleEn, page?.heroSubtitle || undefined)} className="text-[10px] text-gray-400 hover:text-blue-600">Auto</button>
+                                            <button type="button" onClick={() => handleTranslate('heroSubtitle', heroSubtitle, setHeroSubtitleEn, heroSubtitleEn, initialHeroSubtitle || undefined)} className="text-[10px] text-gray-400 hover:text-blue-600">Auto</button>
                                         </div>
                                         <input value={heroSubtitleEn} onChange={e => setHeroSubtitleEn(e.target.value)} className="w-full border rounded px-3 py-1.5 text-sm bg-white" placeholder="Opcionális" />
                                     </div>
@@ -338,7 +349,7 @@ export function PageForm({ page }: { page?: Page }) {
                                     <div className="mt-2 pt-2 border-t">
                                         <div className="flex justify-between items-center mb-1">
                                             <label className="text-[10px] font-bold text-blue-600 uppercase">Button (EN)</label>
-                                            <button type="button" onClick={() => handleTranslate('heroBtn', heroButtonLabel, setHeroButtonLabelEn, heroButtonLabelEn, page?.heroButtonLabel || undefined)} className="text-[10px] text-gray-400 hover:text-blue-600">Auto</button>
+                                            <button type="button" onClick={() => handleTranslate('heroBtn', heroButtonLabel, setHeroButtonLabelEn, heroButtonLabelEn, initialHeroButtonLabel || undefined)} className="text-[10px] text-gray-400 hover:text-blue-600">Auto</button>
                                         </div>
                                         <input value={heroButtonLabelEn} onChange={e => setHeroButtonLabelEn(e.target.value)} className="w-full border rounded px-3 py-1.5 text-sm bg-white" />
                                     </div>

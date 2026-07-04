@@ -42,6 +42,10 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
     const [descriptionEn, setDescriptionEn] = useState(project?.descriptionEn || '')
     const [projectData, setProjectData] = useState(project?.projectData || '')
     const [projectDataEn, setProjectDataEn] = useState(project?.contentEn || '')
+
+    const [initialTitle, setInitialTitle] = useState(project?.title || '')
+    const [initialDescription, setInitialDescription] = useState(project?.description || '')
+    const [initialProjectData, setInitialProjectData] = useState(project?.projectData || '')
     
     const [mainImageFile, setMainImageFile] = useState<File | null>(null)
     const [sponsorLogoFile, setSponsorLogoFile] = useState<File | null>(null)
@@ -83,15 +87,15 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
         setIsTranslating('all')
         try {
             if (title) {
-                const t = await autoTranslateProjectAction(title, titleEn, project?.title || undefined)
+                const t = await autoTranslateProjectAction(title, titleEn, initialTitle || undefined)
                 setTitleEn(t)
             }
             if (projectData) {
-                const t = await autoTranslateProjectAction(projectData, projectDataEn, project?.projectData || undefined)
+                const t = await autoTranslateProjectAction(projectData, projectDataEn, initialProjectData || undefined)
                 setProjectDataEn(t)
             }
             if (description && description !== '[]') {
-                const t = await autoTranslateProjectAction(description, descriptionEn, project?.description || undefined)
+                const t = await autoTranslateProjectAction(description, descriptionEn, initialDescription || undefined)
                 setDescriptionEn(t)
             }
             
@@ -171,6 +175,9 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
         try {
             if (project) {
                 await updateProject(project.id, formData)
+                setInitialTitle(title)
+                setInitialDescription(description)
+                setInitialProjectData(projectData)
             } else {
                 await createProject(formData)
                 router.push('/admin/projects')
@@ -430,7 +437,7 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
                                 size="sm" 
                                 className="gap-2 text-blue-600 border-blue-100 hover:bg-blue-50"
                                 disabled={isTranslating === 'title'}
-                                onClick={() => handleTranslate('title', title, setTitleEn, titleEn, project?.title || undefined)}
+                                onClick={() => handleTranslate('title', title, setTitleEn, titleEn, initialTitle || undefined)}
                             >
                                 {isTranslating === 'title' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                                 Fordítás magyarból
@@ -478,7 +485,7 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
                             size="sm" 
                             className="gap-2 text-blue-600 border-blue-100 hover:bg-blue-50"
                             disabled={isTranslating === 'projectDataEn'}
-                            onClick={() => handleTranslate('projectDataEn', projectData, setProjectDataEn, projectDataEn, project?.projectData || undefined)}
+                            onClick={() => handleTranslate('projectDataEn', projectData, setProjectDataEn, projectDataEn, initialProjectData || undefined)}
                         >
                             {isTranslating === 'projectDataEn' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                             Fordítás magyarból
@@ -496,7 +503,7 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
                             size="sm" 
                             className="gap-2 text-blue-600 border-blue-100 hover:bg-blue-50"
                             disabled={isTranslating === 'description'}
-                            onClick={() => handleTranslate('description', description, setDescriptionEn, descriptionEn, project?.description || undefined)}
+                            onClick={() => handleTranslate('description', description, setDescriptionEn, descriptionEn, initialDescription || undefined)}
                         >
                             {isTranslating === 'description' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                             Fordítás magyarból
