@@ -218,10 +218,19 @@ export async function translateTextWithPreservation(
     
     try {
         const newBlocks = JSON.parse(newHu);
-        const originalBlocks = JSON.parse(originalHu || '[]');
-        const currentEnBlocks = JSON.parse(currentEn || '[]');
-        
         if (!Array.isArray(newBlocks)) return await translateText(newHu, targetLang);
+
+        let originalBlocks: any[] = [];
+        try {
+            const parsed = JSON.parse(originalHu || '[]');
+            if (Array.isArray(parsed)) originalBlocks = parsed;
+        } catch (e) {}
+
+        let currentEnBlocks: any[] = [];
+        try {
+            const parsed = JSON.parse(currentEn || '[]');
+            if (Array.isArray(parsed)) currentEnBlocks = parsed;
+        } catch (e) {}
         
         const translatedBlocks = await Promise.all(newBlocks.map(async (block: any) => {
             // Try to find a matching block in original HU
