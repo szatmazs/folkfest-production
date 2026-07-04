@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
-import { FileText, Calendar, Video, Layout, Settings, ArrowRight } from 'lucide-react'
+import { FileText, Calendar, Video, Layout, Settings, ArrowRight, Terminal } from 'lucide-react'
 import { BulkTranslateButton } from './bulk-translate-button'
+import { execSync } from 'child_process'
+
 // Fetch stats directly in the Server Component
 async function getStats() {
     'use server'
@@ -17,6 +19,15 @@ async function getStats() {
 export default async function AdminDashboard() {
     const stats = await getStats()
 
+    let lastUpdate = 'Ismeretlen'
+    try {
+        // Run git log to fetch the date and time of the last commit
+        const stdout = execSync('git log -1 --format="%Y-%m-%d %H:%M:%S"', { encoding: 'utf-8' })
+        lastUpdate = stdout.trim()
+    } catch (e) {
+        lastUpdate = new Date().toLocaleString('hu-HU')
+    }
+
     return (
         <div>
             <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -27,7 +38,7 @@ export default async function AdminDashboard() {
                 <BulkTranslateButton />
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                 {/* Facebook Kártya */}
                 <Link href="/admin/facebook" className="block p-6 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow group">
                     <div className="flex items-center gap-4 mb-4">
@@ -102,7 +113,24 @@ export default async function AdminDashboard() {
                         <ArrowRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </Link>
+            </div>
 
+            {/* Rendszerfrissítés jegyzet */}
+            <div className="p-6 bg-gray-50 border border-gray-200 rounded-xl max-w-3xl">
+                <div className="flex items-center gap-2 mb-3">
+                    <Terminal className="w-5 h-5 text-gray-600" />
+                    <h3 className="font-bold text-gray-800 text-sm uppercase tracking-wider">Rendszerfrissítés & Telepítés</h3>
+                </div>
+                <p className="text-gray-600 text-sm mb-4">
+                    Utolsó rendszerfrissítés időpontja: <strong className="text-black">{lastUpdate}</strong>
+                </p>
+                <div className="bg-gray-900 text-gray-300 p-4 rounded-lg font-mono text-xs select-all overflow-x-auto space-y-1">
+                    <div>cd /var/www/vhosts/folkfest.hu/httpdocs</div>
+                    <div>./deploy.sh</div>
+                </div>
+                <p className="text-gray-500 text-xs mt-2">
+                    Kattints a fenti sötét parancsmezőre a teljes tartalom kijelöléséhez/másolásához, majd futtasd le a szerver termináljában.
+                </p>
             </div>
         </div>
     )
