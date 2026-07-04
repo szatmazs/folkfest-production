@@ -22,7 +22,7 @@ export default async function AdminDashboard() {
     let lastUpdate = 'Ismeretlen'
     try {
         // Run git log to fetch the date and time of the last commit
-        const stdout = execSync('git log -1 --format="%Y-%m-%d %H:%M:%S"', { encoding: 'utf-8' })
+        const stdout = execSync('git log -1 --date=format:"%Y-%m-%d %H:%M:%S" --format="%ad"', { encoding: 'utf-8' })
         lastUpdate = stdout.trim()
     } catch (e) {
         lastUpdate = new Date().toLocaleString('hu-HU')
