@@ -233,34 +233,84 @@ export async function translateTextWithPreservation(
         } catch (e) {}
         
         const translatedBlocks = await Promise.all(newBlocks.map(async (block: any) => {
-            // Try to find a matching block in original HU
-            const origIndex = originalBlocks.findIndex((origBlock: any) => {
-                if (!origBlock || origBlock.type !== block.type) return false;
+            let origBlock: any = null;
+            let currentEnBlock: any = null;
+            
+            // 1. Try ID-based matching
+            if (block.id) {
+                origBlock = originalBlocks.find((o: any) => o && o.id === block.id);
+                if (origBlock) {
+                    currentEnBlock = currentEnBlocks.find((e: any) => e && e.id === block.id);
+                }
+            }
+            
+            // 2. Fallback to index/type-based matching (for legacy blocks without unique IDs)
+            if (!origBlock) {
+                const origIndex = originalBlocks.findIndex((orig: any) => {
+                    if (!orig || orig.type !== block.type) return false;
+                    
+                    const fields = ['content', 'title', 'text', 'buttonLabel', 'url'];
+                    for (const f of fields) {
+                        if (block[f] !== orig[f]) return false;
+                    }
+                    return true;
+                });
                 
-                // Compare critical content fields to ensure the block hasn't changed in Hungarian
-                const fieldsToCompare = ['content', 'title', 'text', 'buttonLabel'];
+                if (origIndex !== -1) {
+                    origBlock = originalBlocks[origIndex];
+                    if (currentEnBlocks[origIndex] && currentEnBlocks[origIndex].type === block.type) {
+                        currentEnBlock = currentEnBlocks[origIndex];
+                    }
+                }
+            }
+            
+            // 3. If we found a matching original block, check if the content changed
+            if (origBlock && currentEnBlock) {
+                let isChanged = false;
+                const fieldsToCompare = ['content', 'title', 'text', 'buttonLabel', 'url', 'caption'];
                 for (const field of fieldsToCompare) {
-                    if (block[field] !== origBlock[field]) return false;
+                    if (block[field] !== origBlock[field]) {
+                        isChanged = true;
+                        break;
+                    }
                 }
                 
-                // Compare nested items
-                if (Array.isArray(block.items) || Array.isArray(origBlock.items)) {
-                    if (!Array.isArray(block.items) || !Array.isArray(origBlock.items)) return false;
-                    if (block.items.length !== origBlock.items.length) return false;
-                    for (let i = 0; i < block.items.length; i++) {
-                        for (const field of fieldsToCompare) {
-                            if (block.items[i]?.[field] !== origBlock.items[i]?.[field]) return false;
+                // Compare images array (for gallery)
+                if (!isChanged && (Array.isArray(block.images) || Array.isArray(origBlock.images))) {
+                    if (!Array.isArray(block.images) || !Array.isArray(origBlock.images) || block.images.length !== origBlock.images.length) {
+                        isChanged = true;
+                    } else {
+                        for (let i = 0; i < block.images.length; i++) {
+                            if (block.images[i] !== origBlock.images[i]) {
+                                isChanged = true;
+                                break;
+                            }
                         }
                     }
                 }
                 
-                return true;
-            });
-            
-            // If found and there is a corresponding current EN block, preserve it
-            if (origIndex !== -1 && currentEnBlocks[origIndex] && currentEnBlocks[origIndex].type === block.type) {
-                console.log(`[TranslatePreservation] Preserving manual edits for block of type: ${block.type}`);
-                return currentEnBlocks[origIndex];
+                // Compare nested items
+                if (!isChanged && (Array.isArray(block.items) || Array.isArray(origBlock.items))) {
+                    if (!Array.isArray(block.items) || !Array.isArray(origBlock.items) || block.items.length !== origBlock.items.length) {
+                        isChanged = true;
+                    } else {
+                        const fields = ['content', 'title', 'text', 'buttonLabel', 'url'];
+                        for (let i = 0; i < block.items.length; i++) {
+                            for (const field of fields) {
+                                if (block.items[i]?.[field] !== origBlock.items[i]?.[field]) {
+                                    isChanged = true;
+                                    break;
+                                }
+                            }
+                            if (isChanged) break;
+                        }
+                    }
+                }
+                
+                if (!isChanged) {
+                    console.log(`[TranslatePreservation] Preserving manual edits for block ID: ${block.id || 'index-based'} (type: ${block.type})`);
+                    return { ...currentEnBlock, id: block.id || currentEnBlock.id };
+                }
             }
             
             // Otherwise, translate this single block
