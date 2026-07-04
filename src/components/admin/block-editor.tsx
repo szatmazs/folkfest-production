@@ -68,6 +68,21 @@ export function BlockEditor({ initialContent, onChange }: BlockEditorProps) {
         onChange(JSON.stringify(blocks));
     }, [blocks, onChange, isInitialized]);
 
+    useEffect(() => {
+        // If the parent component changes initialContent externally (e.g. from translation),
+        // we update our local blocks state to match it.
+        if (isInitialized && initialContent !== JSON.stringify(blocks)) {
+            try {
+                const parsed = JSON.parse(initialContent);
+                if (Array.isArray(parsed)) {
+                    setBlocks(parsed);
+                }
+            } catch (e) {
+                // Ignore parse errors for external updates
+            }
+        }
+    }, [initialContent, isInitialized, blocks]);
+
     const addBlock = (type: BlockType) => {
         const newBlock: Block = {
             id: crypto.randomUUID(),
