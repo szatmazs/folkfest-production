@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
@@ -39,6 +39,8 @@ export function BlockEditor({ initialContent, onChange }: BlockEditorProps) {
     const [blocks, setBlocks] = useState<Block[]>([]);
     const [isInitialized, setIsInitialized] = useState(false);
 
+    const lastSentContent = useRef(initialContent);
+
     useEffect(() => {
         if (isInitialized) return;
 
@@ -65,23 +67,26 @@ export function BlockEditor({ initialContent, onChange }: BlockEditorProps) {
 
     useEffect(() => {
         if (!isInitialized) return;
-        onChange(JSON.stringify(blocks));
+        const serialized = JSON.stringify(blocks);
+        lastSentContent.current = serialized;
+        onChange(serialized);
     }, [blocks, onChange, isInitialized]);
 
     useEffect(() => {
         // If the parent component changes initialContent externally (e.g. from translation),
         // we update our local blocks state to match it.
-        if (isInitialized && initialContent !== JSON.stringify(blocks)) {
+        if (isInitialized && initialContent !== lastSentContent.current) {
             try {
                 const parsed = JSON.parse(initialContent);
                 if (Array.isArray(parsed)) {
                     setBlocks(parsed);
+                    lastSentContent.current = initialContent;
                 }
             } catch (e) {
                 // Ignore parse errors for external updates
             }
         }
-    }, [initialContent, isInitialized, blocks]);
+    }, [initialContent, isInitialized]);
 
     const addBlock = (type: BlockType) => {
         const newBlock: Block = {
