@@ -304,12 +304,19 @@ export async function deleteProject(id: string) {
 import { translateText, translateTextWithPreservation } from '@/lib/translate'
 
 export async function autoTranslateProjectAction(text: string, currentEn?: string, originalHu?: string) {
+    if (!text) return '';
+    const trimmed = text.trim();
+    const isJson = (trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'));
+    
+    if (isJson) {
+        if (currentEn && originalHu) {
+            return await translateTextWithPreservation(text, currentEn, originalHu, 'en');
+        }
+        return await translateText(text, 'en');
+    }
+    
     if (currentEn && originalHu && text === originalHu) {
         return currentEn;
-    }
-    const trimmed = text.trim();
-    if (currentEn && originalHu && ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}')))) {
-        return await translateTextWithPreservation(text, currentEn, originalHu, 'en');
     }
     return await translateText(text, 'en')
 }
