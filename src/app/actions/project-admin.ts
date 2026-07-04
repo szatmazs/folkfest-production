@@ -301,8 +301,15 @@ export async function deleteProject(id: string) {
     return { success: true }
 }
 
-import { translateText } from '@/lib/translate'
+import { translateText, translateTextWithPreservation } from '@/lib/translate'
 
-export async function autoTranslateProjectAction(text: string) {
+export async function autoTranslateProjectAction(text: string, currentEn?: string, originalHu?: string) {
+    if (currentEn && originalHu && text === originalHu) {
+        return currentEn;
+    }
+    const trimmed = text.trim();
+    if (currentEn && originalHu && ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}')))) {
+        return await translateTextWithPreservation(text, currentEn, originalHu, 'en');
+    }
     return await translateText(text, 'en')
 }

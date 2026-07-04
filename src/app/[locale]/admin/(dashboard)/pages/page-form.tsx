@@ -8,6 +8,7 @@ import { ArrowLeft, Save, Loader2, Image as ImageIcon, Upload, Languages, Sparkl
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { BlockEditor } from '@/components/admin/block-editor'
+import { compressImageClient } from '@/lib/compress-client'
 
 export function PageForm({ page }: { page?: Page }) {
     const router = useRouter()
@@ -45,11 +46,11 @@ export function PageForm({ page }: { page?: Page }) {
     const [heroImagePreview, setHeroImagePreview] = useState<string | null>(page?.heroImage || null)
     const [heroLogoPreview, setHeroLogoPreview] = useState<string | null>(page?.heroLogo || null)
 
-    const handleTranslate = async (field: string, text: string, setter: (val: string) => void) => {
+    const handleTranslate = async (field: string, text: string, setter: (val: string) => void, currentEn?: string, originalHu?: string) => {
         if (!text) return
         setIsTranslating(field)
         try {
-            const translated = await autoTranslatePageAction(text)
+            const translated = await autoTranslatePageAction(text, currentEn, originalHu)
             setter(translated)
         } catch (error) {
             console.error('Translation failed:', error)
@@ -62,23 +63,23 @@ export function PageForm({ page }: { page?: Page }) {
         setIsTranslating('all')
         try {
             if (title) {
-                const t = await autoTranslatePageAction(title)
+                const t = await autoTranslatePageAction(title, titleEn, page?.title || undefined)
                 setTitleEn(t)
             }
             if (heroTitle) {
-                const t = await autoTranslatePageAction(heroTitle)
+                const t = await autoTranslatePageAction(heroTitle, heroTitleEn, page?.heroTitle || undefined)
                 setHeroTitleEn(t)
             }
             if (heroSubtitle) {
-                const t = await autoTranslatePageAction(heroSubtitle)
+                const t = await autoTranslatePageAction(heroSubtitle, heroSubtitleEn, page?.heroSubtitle || undefined)
                 setHeroSubtitleEn(t)
             }
             if (heroButtonLabel) {
-                const t = await autoTranslatePageAction(heroButtonLabel)
+                const t = await autoTranslatePageAction(heroButtonLabel, heroButtonLabelEn, page?.heroButtonLabel || undefined)
                 setHeroButtonLabelEn(t)
             }
             if (content && content !== '[]') {
-                const t = await autoTranslatePageAction(content)
+                const t = await autoTranslatePageAction(content, contentEn, page?.content || undefined)
                 setContentEn(t)
             }
         } catch (error) {
@@ -265,7 +266,7 @@ export function PageForm({ page }: { page?: Page }) {
                                     size="sm" 
                                     className="gap-2 text-blue-600 border-blue-100 hover:bg-blue-50 h-7 text-[10px] uppercase font-bold"
                                     disabled={isTranslating === 'content'}
-                                    onClick={() => handleTranslate('content', content, setContentEn)}
+                                    onClick={() => handleTranslate('content', content, setContentEn, contentEn, page?.content || undefined)}
                                 >
                                     {isTranslating === 'content' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                                     Teljes tartalom fordítása
@@ -313,7 +314,7 @@ export function PageForm({ page }: { page?: Page }) {
                                     <div className="mt-2 pt-2 border-t">
                                         <div className="flex justify-between items-center mb-1">
                                             <label className="text-[10px] font-bold text-blue-600 uppercase">Title (EN)</label>
-                                            <button type="button" onClick={() => handleTranslate('heroTitle', heroTitle, setHeroTitleEn)} className="text-[10px] text-gray-400 hover:text-blue-600">Auto</button>
+                                            <button type="button" onClick={() => handleTranslate('heroTitle', heroTitle, setHeroTitleEn, heroTitleEn, page?.heroTitle || undefined)} className="text-[10px] text-gray-400 hover:text-blue-600">Auto</button>
                                         </div>
                                         <input value={heroTitleEn} onChange={e => setHeroTitleEn(e.target.value)} className="w-full border rounded px-3 py-1.5 text-sm bg-white" placeholder="Opcionális" />
                                     </div>
@@ -325,7 +326,7 @@ export function PageForm({ page }: { page?: Page }) {
                                     <div className="mt-2 pt-2 border-t">
                                         <div className="flex justify-between items-center mb-1">
                                             <label className="text-[10px] font-bold text-blue-600 uppercase">Subtitle (EN)</label>
-                                            <button type="button" onClick={() => handleTranslate('heroSubtitle', heroSubtitle, setHeroSubtitleEn)} className="text-[10px] text-gray-400 hover:text-blue-600">Auto</button>
+                                            <button type="button" onClick={() => handleTranslate('heroSubtitle', heroSubtitle, setHeroSubtitleEn, heroSubtitleEn, page?.heroSubtitle || undefined)} className="text-[10px] text-gray-400 hover:text-blue-600">Auto</button>
                                         </div>
                                         <input value={heroSubtitleEn} onChange={e => setHeroSubtitleEn(e.target.value)} className="w-full border rounded px-3 py-1.5 text-sm bg-white" placeholder="Opcionális" />
                                     </div>
@@ -337,7 +338,7 @@ export function PageForm({ page }: { page?: Page }) {
                                     <div className="mt-2 pt-2 border-t">
                                         <div className="flex justify-between items-center mb-1">
                                             <label className="text-[10px] font-bold text-blue-600 uppercase">Button (EN)</label>
-                                            <button type="button" onClick={() => handleTranslate('heroBtn', heroButtonLabel, setHeroButtonLabelEn)} className="text-[10px] text-gray-400 hover:text-blue-600">Auto</button>
+                                            <button type="button" onClick={() => handleTranslate('heroBtn', heroButtonLabel, setHeroButtonLabelEn, heroButtonLabelEn, page?.heroButtonLabel || undefined)} className="text-[10px] text-gray-400 hover:text-blue-600">Auto</button>
                                         </div>
                                         <input value={heroButtonLabelEn} onChange={e => setHeroButtonLabelEn(e.target.value)} className="w-full border rounded px-3 py-1.5 text-sm bg-white" />
                                     </div>
@@ -353,11 +354,12 @@ export function PageForm({ page }: { page?: Page }) {
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Háttérkép</label>
                                     <div className="relative border-2 border-dashed rounded-lg hover:border-blue-400 cursor-pointer bg-gray-50 aspect-video flex flex-col items-center justify-center overflow-hidden">
-                                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={e => {
+                                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={async e => {
                                             const file = e.target.files?.[0]
                                             if (file) {
-                                                setHeroImageFile(file)
-                                                setHeroImagePreview(URL.createObjectURL(file))
+                                                const compressed = await compressImageClient(file)
+                                                setHeroImageFile(compressed)
+                                                setHeroImagePreview(URL.createObjectURL(compressed))
                                             }
                                         }} />
                                         {heroImagePreview ? (
@@ -376,11 +378,12 @@ export function PageForm({ page }: { page?: Page }) {
                                         <div>
                                             <label className="block text-xs font-bold text-gray-500 mb-2 uppercase">Logó</label>
                                             <div className="relative border-2 border-dashed rounded-lg hover:border-blue-400 cursor-pointer bg-gray-50 h-24 flex flex-col items-center justify-center overflow-hidden">
-                                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={e => {
+                                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={async e => {
                                                     const file = e.target.files?.[0]
                                                     if (file) {
-                                                        setHeroLogoFile(file)
-                                                        setHeroLogoPreview(URL.createObjectURL(file))
+                                                        const compressed = await compressImageClient(file, 800)
+                                                        setHeroLogoFile(compressed)
+                                                        setHeroLogoPreview(URL.createObjectURL(compressed))
                                                     }
                                                 }} />
                                                 {heroLogoPreview ? (

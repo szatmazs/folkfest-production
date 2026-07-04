@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
 import { BlockEditor } from '@/components/admin/block-editor'
 import Image from 'next/image'
+import { compressImageClient } from '@/lib/compress-client'
 
 type ExtendedProject = Project & {
     partners: ProjectPartner[]
@@ -65,11 +66,11 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
         })) || []
     )
 
-    const handleTranslate = async (field: string, text: string, setter: (val: string) => void) => {
+    const handleTranslate = async (field: string, text: string, setter: (val: string) => void, currentEn?: string, originalHu?: string) => {
         if (!text) return
         setIsTranslating(field)
         try {
-            const translated = await autoTranslateProjectAction(text)
+            const translated = await autoTranslateProjectAction(text, currentEn, originalHu)
             setter(translated)
         } catch (error) {
             console.error('Translation failed:', error)
@@ -82,22 +83,27 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
         setIsTranslating('all')
         try {
             if (title) {
-                const t = await autoTranslateProjectAction(title)
+                const t = await autoTranslateProjectAction(title, titleEn, project?.title || undefined)
                 setTitleEn(t)
             }
+            if (projectData) {
+                const t = await autoTranslateProjectAction(projectData, projectDataEn, project?.projectData || undefined)
+                setProjectDataEn(t)
+            }
             if (description && description !== '[]') {
-                const t = await autoTranslateProjectAction(description)
+                const t = await autoTranslateProjectAction(description, descriptionEn, project?.description || undefined)
                 setDescriptionEn(t)
             }
             
             // Translate results
             const newResults = [...results]
             for (let i = 0; i < newResults.length; i++) {
+                const origResult = project?.results?.[i]
                 if (newResults[i].label) {
-                    newResults[i].labelEn = await autoTranslateProjectAction(newResults[i].label)
+                    newResults[i].labelEn = await autoTranslateProjectAction(newResults[i].label, newResults[i].labelEn, origResult?.label || undefined)
                 }
                 if (newResults[i].type === 'text' && newResults[i].content) {
-                    newResults[i].contentEn = await autoTranslateProjectAction(newResults[i].content)
+                    newResults[i].contentEn = await autoTranslateProjectAction(newResults[i].content, newResults[i].contentEn, origResult?.content || undefined)
                 }
             }
             setResults(newResults)
@@ -183,29 +189,32 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
         }
     }
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
-            setMainImageFile(file)
-            const url = URL.createObjectURL(file)
+            const compressed = await compressImageClient(file)
+            setMainImageFile(compressed)
+            const url = URL.createObjectURL(compressed)
             setPreview(url)
         }
     }
 
-    const handleSponsorLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSponsorLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
-            setSponsorLogoFile(file)
-            const url = URL.createObjectURL(file)
+            const compressed = await compressImageClient(file, 800)
+            setSponsorLogoFile(compressed)
+            const url = URL.createObjectURL(compressed)
             setSponsorPreview(url)
         }
     }
 
-    const handleSponsorLogoEnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSponsorLogoEnChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (file) {
-            setSponsorLogoEnFile(file)
-            const url = URL.createObjectURL(file)
+            const compressed = await compressImageClient(file, 800)
+            setSponsorLogoEnFile(compressed)
+            const url = URL.createObjectURL(compressed)
             setSponsorPreviewEn(url)
         }
     }
@@ -228,11 +237,14 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
         setResults(newResults)
     }
 
-    const addGalleryFiles = (index: number, files: FileList) => {
+    const addGalleryFiles = async (index: number, files: FileList) => {
         const newFiles = Array.from(files)
-        const newPreviews = newFiles.map(f => URL.createObjectURL(f))
+        const compressedFiles = await Promise.all(
+            newFiles.map(file => compressImageClient(file))
+        )
+        const newPreviews = compressedFiles.map(f => URL.createObjectURL(f))
         const newResults = [...results]
-        newResults[index].galleryFiles = [...newResults[index].galleryFiles, ...newFiles]
+        newResults[index].galleryFiles = [...newResults[index].galleryFiles, ...compressedFiles]
         newResults[index].galleryPreviews = [...newResults[index].galleryPreviews, ...newPreviews]
         setResults(newResults)
     }
@@ -418,7 +430,7 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
                                 size="sm" 
                                 className="gap-2 text-blue-600 border-blue-100 hover:bg-blue-50"
                                 disabled={isTranslating === 'title'}
-                                onClick={() => handleTranslate('title', title, setTitleEn)}
+                                onClick={() => handleTranslate('title', title, setTitleEn, titleEn, project?.title || undefined)}
                             >
                                 {isTranslating === 'title' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                                 Fordítás magyarból
@@ -466,7 +478,7 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
                             size="sm" 
                             className="gap-2 text-blue-600 border-blue-100 hover:bg-blue-50"
                             disabled={isTranslating === 'projectDataEn'}
-                            onClick={() => handleTranslate('projectDataEn', projectData, setProjectDataEn)}
+                            onClick={() => handleTranslate('projectDataEn', projectData, setProjectDataEn, projectDataEn, project?.projectData || undefined)}
                         >
                             {isTranslating === 'projectDataEn' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                             Fordítás magyarból
@@ -484,7 +496,7 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
                             size="sm" 
                             className="gap-2 text-blue-600 border-blue-100 hover:bg-blue-50"
                             disabled={isTranslating === 'description'}
-                            onClick={() => handleTranslate('description', description, setDescriptionEn)}
+                            onClick={() => handleTranslate('description', description, setDescriptionEn, descriptionEn, project?.description || undefined)}
                         >
                             {isTranslating === 'description' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                             Fordítás magyarból
@@ -546,7 +558,13 @@ export function ProjectForm({ project }: { project?: ExtendedProject }) {
                                         type="file"
                                         accept="image/*"
                                         className="absolute inset-0 opacity-0 cursor-pointer"
-                                        onChange={(e) => updatePartner(index, 'file', e.target.files?.[0])}
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0]
+                                            if (file) {
+                                                const compressed = await compressImageClient(file, 800)
+                                                updatePartner(index, 'file', compressed)
+                                            }
+                                        }}
                                     />
                                 </div>
                             </div>

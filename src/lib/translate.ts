@@ -31,6 +31,17 @@ function convertHungarianOrdinals(text: string): string {
 export async function translateText(text: string, targetLang: string = 'en'): Promise<string> {
     if (!text || text.trim() === '') return '';
     
+    // If it looks like a JSON array/object, use translateJsonBlocks instead
+    const trimmed = text.trim();
+    if ((trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'))) {
+        try {
+            JSON.parse(trimmed);
+            return await translateJsonBlocks(text, targetLang);
+        } catch (e) {
+            // Not valid JSON, fallback to normal translation
+        }
+    }
+
     let textToTranslate = text;
     if (targetLang.toLowerCase() === 'en') {
         textToTranslate = convertHungarianOrdinals(text);
@@ -187,5 +198,73 @@ export async function translateJsonBlocks(jsonString: string, targetLang: string
     } catch (e) {
         console.error('[TranslateJson] Error parsing/translating blocks:', e);
         return jsonString;
+    }
+}
+
+export async function translateTextWithPreservation(
+    newHu: string,
+    currentEn: string,
+    originalHu: string,
+    targetLang: string = 'en'
+): Promise<string> {
+    if (!newHu || newHu.trim() === '') return '';
+    
+    // Only apply preservation logic if it's JSON
+    const trimmedNew = newHu.trim();
+    const isJson = (trimmedNew.startsWith('[') && trimmedNew.endsWith(']')) || (trimmedNew.startsWith('{') && trimmedNew.endsWith('}'));
+    if (!isJson) {
+        return await translateText(newHu, targetLang);
+    }
+    
+    try {
+        const newBlocks = JSON.parse(newHu);
+        const originalBlocks = JSON.parse(originalHu || '[]');
+        const currentEnBlocks = JSON.parse(currentEn || '[]');
+        
+        if (!Array.isArray(newBlocks)) return await translateText(newHu, targetLang);
+        
+        const translatedBlocks = await Promise.all(newBlocks.map(async (block: any) => {
+            // Try to find a matching block in original HU
+            const origIndex = originalBlocks.findIndex((origBlock: any) => {
+                if (!origBlock || origBlock.type !== block.type) return false;
+                
+                // Compare critical content fields to ensure the block hasn't changed in Hungarian
+                const fieldsToCompare = ['content', 'title', 'text', 'buttonLabel'];
+                for (const field of fieldsToCompare) {
+                    if (block[field] !== origBlock[field]) return false;
+                }
+                
+                // Compare nested items
+                if (Array.isArray(block.items) || Array.isArray(origBlock.items)) {
+                    if (!Array.isArray(block.items) || !Array.isArray(origBlock.items)) return false;
+                    if (block.items.length !== origBlock.items.length) return false;
+                    for (let i = 0; i < block.items.length; i++) {
+                        for (const field of fieldsToCompare) {
+                            if (block.items[i]?.[field] !== origBlock.items[i]?.[field]) return false;
+                        }
+                    }
+                }
+                
+                return true;
+            });
+            
+            // If found and there is a corresponding current EN block, preserve it
+            if (origIndex !== -1 && currentEnBlocks[origIndex] && currentEnBlocks[origIndex].type === block.type) {
+                console.log(`[TranslatePreservation] Preserving manual edits for block of type: ${block.type}`);
+                return currentEnBlocks[origIndex];
+            }
+            
+            // Otherwise, translate this single block
+            console.log(`[TranslatePreservation] Translating new/modified block of type: ${block.type}`);
+            const singleBlockArray = [block];
+            const translatedSingleJson = await translateJsonBlocks(JSON.stringify(singleBlockArray), targetLang);
+            const translatedSingle = JSON.parse(translatedSingleJson);
+            return translatedSingle[0];
+        }));
+        
+        return JSON.stringify(translatedBlocks);
+    } catch (e) {
+        console.error('[TranslatePreservation] Error merging/translating blocks:', e);
+        return await translateText(newHu, targetLang);
     }
 }
