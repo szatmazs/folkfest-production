@@ -25,6 +25,7 @@ npx prisma migrate deploy || { echo -e "${RED}Migration failed${NC}"; exit 1; }
 
 # Build
 echo -e "${YELLOW}Building application...${NC}"
+rm -rf .next
 npm run build || { echo -e "${RED}Build failed${NC}"; exit 1; }
 
 # Restart PM2
