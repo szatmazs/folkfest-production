@@ -37,6 +37,7 @@ export function LanguageSwitcher({ currentLocale, className }: { currentLocale: 
         <div className={cn("flex items-center gap-2", className)}>
             <button
                 onClick={() => toggleLanguage("hu")}
+                aria-label="Magyar nyelvű változat"
                 className={cn(
                     "text-[10px] font-bold tracking-widest px-2 py-1 rounded transition-all",
                     currentLocale === "hu"
@@ -49,6 +50,7 @@ export function LanguageSwitcher({ currentLocale, className }: { currentLocale: 
             <div className={cn("w-px h-3", isScrolled ? "bg-gray-200" : "bg-white/20")} />
             <button
                 onClick={() => toggleLanguage("en")}
+                aria-label="English version"
                 className={cn(
                     "text-[10px] font-bold tracking-widest px-2 py-1 rounded transition-all",
                     currentLocale === "en"

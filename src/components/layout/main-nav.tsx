@@ -111,10 +111,10 @@ export function MainNav({ items, locale }: MainNavProps) {
                     </div>
 
                     {/* Logo at the top of the mobile menu */}
-                    <Link href="/" className="relative h-12 w-48 mb-4 block" onClick={() => setIsOpen(false)}>
+                    <Link href="/" className="relative h-12 w-48 mb-4 block" onClick={() => setIsOpen(false)} aria-label="FolkFest - Kezdőlap">
                         <Image
                             src="/logo.png"
-                            alt="FolkFest Logo"
+                            alt="FolkFest"
                             fill
                             className="object-contain object-center brightness-0 invert"
                             priority

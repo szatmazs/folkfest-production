@@ -57,7 +57,7 @@ export async function Navbar({ locale }: { locale: string }) {
     return (
         <NavbarShell>
             <div className="container mx-auto px-4 h-20 flex items-center justify-between gap-2 lg:gap-4">
-                <Link href="/" className="flex-shrink-0">
+                <Link href="/" className="flex-shrink-0" aria-label="FolkFest - Kezdőlap">
                     <NavbarLogo />
                 </Link>
 

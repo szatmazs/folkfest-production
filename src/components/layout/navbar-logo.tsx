@@ -11,7 +11,7 @@ export function NavbarLogo() {
         <div className="relative h-12 w-48">
             <Image
                 src="/logo.png"
-                alt="FolkFest Logo"
+                alt="FolkFest"
                 fill
                 className={cn(
                     "object-contain object-left transition-all duration-300",
