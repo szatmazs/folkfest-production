@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { downloadFacebookImage } from "@/lib/download-image";
 import { translateText } from "@/lib/translate";
+import path from "path";
 
 // Define types for API responses to avoid 'any'
 interface FacebookApiPost {
