@@ -5,6 +5,7 @@ import { scrapeLandrRelease } from "@/lib/scraper";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { translateText } from "@/lib/translate";
+import { downloadFacebookImage } from "@/lib/download-image";
 
 export async function autoTranslateReleaseAction(text: string) {
     return await translateText(text, 'en')
@@ -29,6 +30,8 @@ export async function createReleaseAction(prevState: any, formData: FormData) {
     const coverUrl = formData.get("coverUrl") as string;
     const promoLink = formData.get("promoLink") as string;
 
+    const id = crypto.randomUUID();
+
     // Parse JSON fields
     let tracklist = "[]";
     let streamingLinks = "{}";
@@ -52,14 +55,21 @@ export async function createReleaseAction(prevState: any, formData: FormData) {
     let titleEn = formData.get("titleEn") as string;
     if (!titleEn && title) titleEn = await translateText(title, 'en');
 
+    let finalCoverUrl = coverUrl;
+    if (coverUrl && coverUrl.startsWith('http')) {
+        const localPath = await downloadFacebookImage(coverUrl, id, 'covers');
+        if (localPath) finalCoverUrl = localPath;
+    }
+
     try {
         await prisma.release.create({
             data: {
+                id,
                 artist,
                 title,
                 titleEn: titleEn || null,
                 year,
-                coverUrl,
+                coverUrl: finalCoverUrl,
                 promoLink,
                 tracklist,
                 streamingLinks
@@ -95,6 +105,12 @@ export async function updateReleaseAction(id: string, prevState: any, formData: 
     let titleEn = formData.get("titleEn") as string;
     if (!titleEn && title) titleEn = await translateText(title, 'en');
 
+    let finalCoverUrl = coverUrl;
+    if (coverUrl && coverUrl.startsWith('http')) {
+        const localPath = await downloadFacebookImage(coverUrl, id, 'covers');
+        if (localPath) finalCoverUrl = localPath;
+    }
+
     try {
         await prisma.release.update({
             where: { id },
@@ -103,7 +119,7 @@ export async function updateReleaseAction(id: string, prevState: any, formData: 
                 title,
                 titleEn: titleEn || null,
                 year,
-                coverUrl,
+                coverUrl: finalCoverUrl,
                 promoLink,
                 tracklist,
                 streamingLinks
