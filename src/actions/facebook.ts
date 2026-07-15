@@ -109,13 +109,13 @@ export interface FacebookEvent {
     }; // Added field
 }
 
-export async function getFacebookEvents(): Promise<FacebookEvent[]> {
+export async function getFacebookEvents(options: { forceRefresh?: boolean } = {}): Promise<FacebookEvent[]> {
     const pageId = process.env.FACEBOOK_PAGE_ID;
     const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
 
-    let shouldSync = false;
-    let awaitSync = false;
-    if (process.env.NODE_ENV === 'development') {
+    let shouldSync = options.forceRefresh || false;
+    let awaitSync = options.forceRefresh || false;
+    if (process.env.NODE_ENV === 'development' && !shouldSync) {
         const latestEvent = await prisma.facebookEvent.findFirst({
             orderBy: { updatedAt: 'desc' },
             select: { updatedAt: true }

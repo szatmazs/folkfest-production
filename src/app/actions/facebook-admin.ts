@@ -71,7 +71,7 @@ export async function deletePost(id: string) {
 export async function syncFacebookData() {
     try {
         await getFacebookPosts({ forceRefresh: true })
-        await getFacebookEvents()
+        await getFacebookEvents({ forceRefresh: true })
         revalidateContent()
         return { success: true }
     } catch (e) {
