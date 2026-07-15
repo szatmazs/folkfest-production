@@ -7,7 +7,9 @@ import { getFacebookPosts, getFacebookEvents } from '@/actions/facebook'
 function revalidateContent() {
     revalidatePath('/')
     revalidatePath('/hirek')
+    revalidatePath('/events')
     revalidatePath('/admin/facebook')
+    revalidatePath('/admin/facebook/events')
 }
 
 export async function getAdminFacebookPosts() {
@@ -15,6 +17,39 @@ export async function getAdminFacebookPosts() {
         orderBy: { createdTime: 'desc' },
     })
 }
+
+export async function getAdminFacebookEvents() {
+    return await prisma.facebookEvent.findMany({
+        orderBy: { startTime: 'desc' },
+    })
+}
+
+export async function toggleEventVisibility(id: string) {
+    const event = await prisma.facebookEvent.findUnique({ where: { id } })
+    if (!event) return
+
+    await prisma.facebookEvent.update({
+        where: { id },
+        data: { isVisible: !event.isVisible },
+    })
+    revalidateContent()
+}
+
+export async function updateEventDetails(id: string, nameEn: string, descriptionEn: string, placeEn: string) {
+    await prisma.facebookEvent.update({
+        where: { id },
+        data: { nameEn, descriptionEn, placeEn },
+    })
+    revalidateContent()
+}
+
+export async function deleteEvent(id: string) {
+    await prisma.facebookEvent.delete({
+        where: { id }
+    })
+    revalidateContent()
+}
+
 
 export async function togglePostVisibility(id: string) {
     const post = await prisma.facebookPost.findUnique({ where: { id } })

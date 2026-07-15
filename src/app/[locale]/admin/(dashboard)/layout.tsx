@@ -14,7 +14,8 @@ import {
     Users,
     Mail,
     PanelBottom,
-    Languages
+    Languages,
+    Calendar
 } from 'lucide-react'
 
 const navItems = [
@@ -25,6 +26,7 @@ const navItems = [
     { href: '/admin/partners', label: 'Partnerek', icon: Users },
     { href: '/admin/videos', label: 'Videók', icon: Video },
     { href: '/admin/facebook', label: 'Facebook Hírek', icon: Facebook },
+    { href: '/admin/facebook/events', label: 'Facebook Események', icon: Calendar },
     { href: '/admin/menu', label: 'Menü', icon: Menu },
     { href: '/admin/contact', label: 'Kapcsolat', icon: Mail },
     { href: '/admin/settings', label: 'Főoldal', icon: Settings },
