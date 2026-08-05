@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { PartnersCarousel } from "@/components/features/partners-carousel";
 
 interface LayoutWrapperProps {
     children: React.ReactNode;
@@ -12,6 +13,7 @@ export function LayoutWrapper({ children, navbar, footer }: LayoutWrapperProps) 
     const pathname = usePathname();
     // Also enable for login page or other auth pages if needed, but for now just admin check
     const isAdmin = pathname?.includes("/admin");
+    const isHome = pathname === "/hu" || pathname === "/en" || pathname === "/";
 
     return (
         <>
@@ -19,6 +21,7 @@ export function LayoutWrapper({ children, navbar, footer }: LayoutWrapperProps) 
             <main className={!isAdmin ? "min-h-screen" : ""}>
                 {children}
             </main>
+            {!isAdmin && !isHome && <PartnersCarousel />}
             {!isAdmin && footer}
         </>
     );

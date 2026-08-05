@@ -52,6 +52,50 @@ export function HomeSectionEditor({ sections, onChange }: HomeSectionEditorProps
     // Language tabs state per section (default to HU)
     const [sectionTabs, setSectionTabs] = useState<Record<string, 'hu' | 'en'>>({});
 
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', index.toString());
+    };
+
+    const handleDragOver = (e: React.DragEvent, index: number) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === index) return;
+        setDragOverIndex(index);
+    };
+
+    const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === targetIndex) {
+            setDraggedIndex(null);
+            setDragOverIndex(null);
+            return;
+        }
+
+        const somloSection = sections.find(s => s.id === 'somlo');
+        if (!somloSection || !somloSection.posters) return;
+
+        const newPosters = [...somloSection.posters];
+        const draggedItem = newPosters[draggedIndex];
+        
+        // Remove item from original position
+        newPosters.splice(draggedIndex, 1);
+        // Insert item at target position
+        newPosters.splice(targetIndex, 0, draggedItem);
+
+        updateSection('somlo', { posters: newPosters });
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+    };
+
     const getSectionTab = (id: string) => sectionTabs[id] || 'hu';
     const setSectionTab = (id: string, tab: 'hu' | 'en') => {
         setSectionTabs(prev => ({ ...prev, [id]: tab }));
@@ -281,7 +325,24 @@ export function HomeSectionEditor({ sections, onChange }: HomeSectionEditorProps
                                         </label>
                                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                             {section.posters?.map((poster, pIndex) => (
-                                                <div key={pIndex} className="relative aspect-[2/3] group rounded border overflow-hidden bg-white shadow-sm">
+                                                <div 
+                                                    key={pIndex} 
+                                                    draggable
+                                                    onDragStart={(e) => handleDragStart(e, pIndex)}
+                                                    onDragOver={(e) => handleDragOver(e, pIndex)}
+                                                    onDrop={(e) => handleDrop(e, pIndex)}
+                                                    onDragEnd={handleDragEnd}
+                                                    onDragLeave={() => setDragOverIndex(null)}
+                                                    className={cn(
+                                                        "relative aspect-[2/3] group rounded border overflow-hidden bg-white shadow-sm transition-all duration-200 cursor-grab active:cursor-grabbing",
+                                                        draggedIndex === pIndex && "opacity-40 scale-95 border-blue-500 border-2",
+                                                        dragOverIndex === pIndex && "border-dashed border-blue-500 border-2 scale-105"
+                                                    )}
+                                                >
+                                                    {/* Grab handle indicator */}
+                                                    <div className="absolute top-1.5 left-1.5 z-10 bg-white/80 hover:bg-white text-gray-700 p-1 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <GripVertical className="w-3.5 h-3.5" />
+                                                    </div>
                                                     <img src={poster.src} className="w-full h-full object-cover" alt={`Poster ${poster.year}`} />
                                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-2 gap-2">
                                                         <input 
