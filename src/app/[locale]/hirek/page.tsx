@@ -5,10 +5,20 @@ import { getTranslations } from 'next-intl/server';
 
 export const revalidate = 600; // Update every 10 minutes
 
+import type { Metadata } from "next";
+
 interface PageProps {
     params: Promise<{
         locale: string;
     }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const { locale } = await params;
+    const t = await getTranslations({ locale, namespace: 'navigation' });
+    return {
+        title: t('news'),
+    };
 }
 
 export default async function NewsPage({ params }: PageProps) {

@@ -5,6 +5,15 @@ import { prisma } from "@/lib/prisma";
 import { getPreviewText } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/page-header";
 import { getTranslations } from 'next-intl/server';
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+    const { locale } = await params;
+    const t = await getTranslations({ locale, namespace: 'navigation' });
+    return {
+        title: t('projects'),
+    };
+}
 
 export const revalidate = 0;
 

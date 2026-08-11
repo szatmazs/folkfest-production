@@ -3,6 +3,15 @@ import { getContactBlocks, getContactSettings } from "@/app/actions/contact-admi
 import { ContactForm } from "./contact-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { getTranslations } from 'next-intl/server';
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const { locale } = await params;
+    const t = await getTranslations({ locale, namespace: 'navigation' });
+    return {
+        title: t('contact'),
+    };
+}
 
 const AVAILABLE_ICONS = {
     MapPin: MapPin,

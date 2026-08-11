@@ -5,10 +5,21 @@ import { PageHeader } from "@/components/layout/page-header";
 import { getFacebookEvents } from "@/actions/facebook";
 import { EventsList } from "@/components/features/events-list";
 
+import { getTranslations } from 'next-intl/server';
+import type { Metadata } from "next";
+
 interface PageProps {
     params: Promise<{
         locale: string;
     }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+    const { locale } = await params;
+    const t = await getTranslations({ locale, namespace: 'common' });
+    return {
+        title: t('events'),
+    };
 }
 
 export default async function EventsPage({ params }: PageProps) {

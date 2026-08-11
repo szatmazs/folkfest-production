@@ -1,5 +1,5 @@
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages, setRequestLocale } from 'next-intl/server';
+import { getMessages, setRequestLocale, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 
@@ -29,42 +29,63 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-export const metadata: Metadata = {
-  title: {
-    default: "FolkFest Kulturális Egyesület",
-    template: "%s | FolkFest Kulturális Egyesület"
-  },
-  description: "A FolkFest Kulturális Egyesület hivatalos weboldala. Kulturális értékteremtés, hagyományőrzés és tehetséggondozás a Kárpát-medencében.",
-  metadataBase: new URL('https://folkfest.hu'),
-  alternates: {
-    canonical: '/',
-  },
-  openGraph: {
-    title: "FolkFest Kulturális Egyesület",
-    description: "A FolkFest Kulturális Egyesület hivatalos weboldala. Kulturális értékteremtés, hagyományőrzés és tehetséggondozás a Kárpát-medencében.",
-    url: 'https://folkfest.hu',
-    siteName: 'FolkFest',
-    locale: 'hu_HU',
-    type: 'website',
-    images: [
-      {
-        url: '/logo.png',
-        width: 1200,
-        height: 630,
-        alt: 'FolkFest Kulturális Egyesület',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: "FolkFest Kulturális Egyesület",
-    description: "A FolkFest Kulturális Egyesület hivatalos weboldala.",
-    images: ['/logo.png'],
-  },
-  icons: {
-    icon: "/favicon.png?v=4",
-  },
-};
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const isEn = locale === 'en';
+
+  const title = isEn ? "FolkFest Cultural Association" : "FolkFest Kulturális Egyesület";
+  
+  const t = await getTranslations({ locale, namespace: 'footer' });
+  const brandDescription = t('brandDescription');
+  const description = `${isEn ? "Official website of the FolkFest Cultural Association." : "A FolkFest Kulturális Egyesület hivatalos weboldala."} ${brandDescription}`;
+
+  const ogLocale = isEn ? 'en_US' : 'hu_HU';
+
+  return {
+    title: {
+      default: title,
+      template: `%s | ${title}`
+    },
+    description,
+    metadataBase: new URL('https://folkfest.hu'),
+    alternates: {
+      canonical: `/${locale}`,
+      languages: {
+        'hu': '/hu',
+        'en': '/en',
+      }
+    },
+    openGraph: {
+      title,
+      description,
+      url: `https://folkfest.hu/${locale}`,
+      siteName: 'FolkFest',
+      locale: ogLocale,
+      type: 'website',
+      images: [
+        {
+          url: '/logo.png',
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/logo.png'],
+    },
+    icons: {
+      icon: "/favicon.png?v=4",
+    },
+  };
+}
 
 import { CookieConsent } from "@/components/features/cookie-consent";
 
