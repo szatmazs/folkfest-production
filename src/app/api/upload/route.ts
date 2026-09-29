@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server';
 import { uploadImage } from '@/lib/upload';
+import { getSession } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
     try {
+        if (!(await getSession())?.userId) {
+            return NextResponse.json({ error: 'Nincs jogosultság' }, { status: 401 });
+        }
+        if (!rateLimit('upload', 30, 15 * 60 * 1000)) {
+            return NextResponse.json({ error: 'Túl sok feltöltés' }, { status: 429 });
+        }
         const formData = await req.formData();
         const files = formData.getAll('file') as File[];
         

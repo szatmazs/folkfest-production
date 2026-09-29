@@ -192,6 +192,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
         { year: 2023, src: "/posters/poster-2023.jpg" },
         { year: 2024, src: "/posters/poster-2024.jpg" },
         { year: 2025, src: "/posters/poster-2025.jpg" },
+        { year: 2026, src: "/uploads/pages/1783618350756-980581095.jpg" },
       ] 
     },
     { 

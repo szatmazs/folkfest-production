@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getFacebookPosts, getFacebookEvents } from '@/actions/facebook'
+import { requireSession } from '@/lib/auth'
 
 function revalidateContent() {
     revalidatePath('/')
@@ -25,6 +26,7 @@ export async function getAdminFacebookEvents() {
 }
 
 export async function toggleEventVisibility(id: string) {
+    await requireSession()
     const event = await prisma.facebookEvent.findUnique({ where: { id } })
     if (!event) return
 
@@ -36,6 +38,7 @@ export async function toggleEventVisibility(id: string) {
 }
 
 export async function updateEventDetails(id: string, nameEn: string, descriptionEn: string, placeEn: string) {
+    await requireSession()
     await prisma.facebookEvent.update({
         where: { id },
         data: { nameEn, descriptionEn, placeEn },
@@ -44,6 +47,7 @@ export async function updateEventDetails(id: string, nameEn: string, description
 }
 
 export async function deleteEvent(id: string) {
+    await requireSession()
     await prisma.facebookEvent.delete({
         where: { id }
     })
@@ -52,6 +56,7 @@ export async function deleteEvent(id: string) {
 
 
 export async function togglePostVisibility(id: string) {
+    await requireSession()
     const post = await prisma.facebookPost.findUnique({ where: { id } })
     if (!post) return
 
@@ -63,6 +68,7 @@ export async function togglePostVisibility(id: string) {
 }
 
 export async function togglePostCarouselVisibility(id: string) {
+    await requireSession()
     const post = await prisma.facebookPost.findUnique({ where: { id } })
     if (!post) return
 
@@ -74,6 +80,7 @@ export async function togglePostCarouselVisibility(id: string) {
 }
 
 export async function updatePostTitle(id: string, customTitle: string, customTitleEn: string) {
+    await requireSession()
     await prisma.facebookPost.update({
         where: { id },
         data: { customTitle, customTitleEn },
@@ -82,6 +89,7 @@ export async function updatePostTitle(id: string, customTitle: string, customTit
 }
 
 export async function updatePostMessageEn(id: string, messageEn: string) {
+    await requireSession()
     await prisma.facebookPost.update({
         where: { id },
         data: { messageEn },
@@ -90,6 +98,7 @@ export async function updatePostMessageEn(id: string, messageEn: string) {
 }
 
 export async function deletePost(id: string) {
+    await requireSession()
     // Record as deleted to prevent re-sync
     await prisma.deletedFacebookPost.upsert({
         where: { id },
@@ -104,6 +113,7 @@ export async function deletePost(id: string) {
 }
 
 export async function syncFacebookData() {
+    await requireSession()
     try {
         await getFacebookPosts({ forceRefresh: true })
         await getFacebookEvents({ forceRefresh: true })

@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { requireSession } from '@/lib/auth'
 
 export async function getVideos() {
     return await prisma.video.findMany({
@@ -13,10 +14,12 @@ export async function getVideos() {
 import { translateText } from '@/lib/translate'
 
 export async function autoTranslateVideoAction(text: string) {
+    await requireSession()
     return await translateText(text, 'en')
 }
 
 export async function createVideo(formData: FormData) {
+    await requireSession()
     const title = formData.get('title') as string
     let titleEn = formData.get('titleEn') as string
     const videoUrl = formData.get('videoUrl') as string
@@ -54,6 +57,7 @@ export async function createVideo(formData: FormData) {
 }
 
 export async function updateVideo(id: string, formData: FormData) {
+    await requireSession()
     const title = formData.get('title') as string
     let titleEn = formData.get('titleEn') as string
     const videoUrl = formData.get('videoUrl') as string
@@ -88,6 +92,7 @@ export async function updateVideo(id: string, formData: FormData) {
 }
 
 export async function deleteVideo(id: string) {
+    await requireSession()
     try {
         await prisma.video.delete({
             where: { id },
@@ -151,6 +156,7 @@ export async function getVideoMetadata(url: string) {
 }
 
 export async function toggleVideoFeatured(id: string, featured: boolean) {
+    await requireSession()
     await prisma.video.update({
         where: { id },
         data: { featured },
@@ -158,4 +164,3 @@ export async function toggleVideoFeatured(id: string, featured: boolean) {
     revalidatePath('/', 'layout')
     return { success: true }
 }
-

@@ -6,12 +6,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { translateText } from "@/lib/translate";
 import { downloadFacebookImage } from "@/lib/download-image";
+import { requireSession } from "@/lib/auth";
 
 export async function autoTranslateReleaseAction(text: string) {
+    await requireSession();
     return await translateText(text, 'en')
 }
 
 export async function scrapeReleaseAction(url: string) {
+    await requireSession();
     if (!url) return { success: false, error: "URL is required" };
     try {
         const data = await scrapeLandrRelease(url);
@@ -24,6 +27,7 @@ export async function scrapeReleaseAction(url: string) {
 }
 
 export async function createReleaseAction(prevState: any, formData: FormData) {
+    await requireSession();
     const artist = formData.get("artist") as string;
     const title = formData.get("title") as string;
     const year = parseInt(formData.get("year") as string);
@@ -83,6 +87,7 @@ export async function createReleaseAction(prevState: any, formData: FormData) {
 }
 
 export async function updateReleaseAction(id: string, prevState: any, formData: FormData) {
+    await requireSession();
     const artist = formData.get("artist") as string;
     const title = formData.get("title") as string;
     const year = parseInt(formData.get("year") as string);
@@ -133,6 +138,7 @@ export async function updateReleaseAction(id: string, prevState: any, formData: 
 }
 
 export async function deleteReleaseAction(id: string) {
+    await requireSession();
     try {
         await prisma.release.delete({
             where: { id }

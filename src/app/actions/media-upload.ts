@@ -1,9 +1,11 @@
 'use server'
 
 import { uploadImage } from '@/lib/upload'
+import { requireSession } from '@/lib/auth'
 
 export async function uploadMedia(formData: FormData) {
     try {
+        await requireSession()
         const files = formData.getAll('file') as File[]
         if (files.length === 0) return { error: 'Nem található fájl' }
 

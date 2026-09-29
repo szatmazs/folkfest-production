@@ -3,8 +3,10 @@
 import { prisma } from '@/lib/prisma'
 import { translateText, translateJsonBlocks } from '@/lib/translate'
 import { revalidatePath } from 'next/cache'
+import { requireSession } from '@/lib/auth'
 
 export async function bulkTranslateAction() {
+    await requireSession()
     console.log('[BulkTranslate] Starting bulk translation...')
     
     const counts = {

@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { translateText } from "@/lib/translate";
+import { requireSession } from "@/lib/auth";
 
 export async function getSlides() {
     try {
@@ -29,6 +30,7 @@ export async function getSlide(id: string) {
 }
 
 export async function saveSlide(formData: FormData) {
+    await requireSession();
     try {
         const id = formData.get("id") as string;
         const isActive = formData.get("isActive") === "true";
@@ -124,6 +126,7 @@ export async function saveSlide(formData: FormData) {
 }
 
 export async function deleteSlide(id: string) {
+    await requireSession();
     try {
         await prisma.heroSlide.delete({
             where: { id }
@@ -138,6 +141,7 @@ export async function deleteSlide(id: string) {
 }
 
 export async function reorderSlides(slideIds: string[]) {
+    await requireSession();
     try {
         await prisma.$transaction(
             slideIds.map((id, index) => 
@@ -157,5 +161,6 @@ export async function reorderSlides(slideIds: string[]) {
 }
 
 export async function autoTranslateSliderAction(text: string) {
+    await requireSession();
     return await translateText(text, 'en');
 }

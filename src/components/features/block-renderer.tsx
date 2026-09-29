@@ -6,6 +6,7 @@ import { GalleryLightbox } from "@/components/ui/gallery-lightbox";
 import { VideoResult } from "@/components/features/video-result";
 import { Block } from "@/components/admin/block-editor";
 import { Facebook, Youtube, Instagram, Mail, MapPin, Phone, Globe, Twitter, Linkedin, Heart } from "lucide-react";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 const IconMap: Record<string, any> = { 
     Facebook, Youtube, Instagram, Mail, MapPin, Phone, Globe, Twitter, Linkedin 
@@ -33,7 +34,7 @@ export function BlockRenderer({ content, className, compact = false, invert = fa
         return (
             <div
                 className={cn("prose prose-lg max-w-none", invert ? "prose-invert text-gray-300" : "text-gray-700", className)}
-                dangerouslySetInnerHTML={{ __html: content }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
             />
         );
     }
@@ -117,7 +118,7 @@ export function BlockRenderer({ content, className, compact = false, invert = fa
                                     block.variant === 'slab-clean' && cn("font-light uppercase leading-loose border-gray-100", compact ? "text-xs tracking-[0.2em] p-4 border text-gray-400" : "text-sm tracking-[0.4em] p-10 md:p-16 border text-gray-800"),
                                     !block.variant || block.variant === 'default' ? "" : ""
                                 )}
-                                dangerouslySetInnerHTML={{ __html: block.content || "" }}
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.content) }}
                             />
                         );
 
@@ -138,7 +139,7 @@ export function BlockRenderer({ content, className, compact = false, invert = fa
                         const iconTextContent = (
                             <div className={cn("flex items-start gap-3", invert ? "text-gray-300" : "text-gray-700")}>
                                 {IconComponent && <IconComponent className={cn("h-5 w-5 shrink-0 mt-0.5", invert ? "text-gray-400" : "text-gray-500")} />}
-                                <div className="text-sm leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: block.content || "" }} />
+                                <div className="text-sm leading-relaxed whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.content) }} />
                             </div>
                         );
                         

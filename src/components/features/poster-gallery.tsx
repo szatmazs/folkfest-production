@@ -20,6 +20,7 @@ const POSTERS: Poster[] = [
     { id: 2023, year: 2023, src: "/posters/poster-2023.jpg" },
     { id: 2024, year: 2024, src: "/posters/poster-2024.jpg" },
     { id: 2025, year: 2025, src: "/posters/poster-2025.jpg" },
+    { id: 2026, year: 2026, src: "/uploads/pages/1783618350756-980581095.jpg" },
 ];
 
 interface PosterGalleryProps {

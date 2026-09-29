@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { translateText } from '@/lib/translate'
+import { requireSession } from '@/lib/auth'
 
 export async function getContactBlocks() {
     return await prisma.contactBlock.findMany({
@@ -11,6 +12,7 @@ export async function getContactBlocks() {
 }
 
 export async function addContactBlock(data: any) {
+    await requireSession()
     if (!data.titleEn && data.title) data.titleEn = await translateText(data.title, 'en')
     if (!data.contentEn && data.content) data.contentEn = await translateText(data.content, 'en')
 
@@ -22,6 +24,7 @@ export async function addContactBlock(data: any) {
 }
 
 export async function updateContactBlock(id: string, data: any) {
+    await requireSession()
     if (!data.titleEn && data.title) data.titleEn = await translateText(data.title, 'en')
     if (!data.contentEn && data.content) data.contentEn = await translateText(data.content, 'en')
 
@@ -34,6 +37,7 @@ export async function updateContactBlock(id: string, data: any) {
 }
 
 export async function deleteContactBlock(id: string) {
+    await requireSession()
     await prisma.contactBlock.delete({
         where: { id }
     })
@@ -55,6 +59,7 @@ export async function getContactSettings() {
 }
 
 export async function updateContactSettings(data: any) {
+    await requireSession()
     if (!data.heroTitleEn && data.heroTitle) data.heroTitleEn = await translateText(data.heroTitle, 'en')
     if (!data.heroSubtitleEn && data.heroSubtitle) data.heroSubtitleEn = await translateText(data.heroSubtitle, 'en')
     if (!data.footerInfoEn && data.footerInfo) data.footerInfoEn = await translateText(data.footerInfo, 'en')

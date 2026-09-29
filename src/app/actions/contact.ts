@@ -2,8 +2,12 @@
 
 import { prisma } from '@/lib/prisma'
 import nodemailer from 'nodemailer'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function sendContactEmail(formData: FormData) {
+    if (!rateLimit('contact-form', 5, 15 * 60 * 1000)) {
+        return { success: false, error: 'Túl sok üzenet érkezett. Próbálja újra később.' }
+    }
     const name = formData.get('name') as string
     const email = formData.get('email') as string
     const subject = formData.get('subject') as string
@@ -79,7 +83,7 @@ export async function sendContactEmail(formData: FormData) {
                 pass: settings.smtpPassword,
             },
             tls: {
-                rejectUnauthorized: false
+                rejectUnauthorized: true
             }
         })
 

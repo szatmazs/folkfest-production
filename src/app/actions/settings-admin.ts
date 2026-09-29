@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
 import { uploadImage } from '@/lib/upload'
+import { requireSession } from '@/lib/auth'
 
 export async function getHomeSettings() {
     return await prisma.homeSettings.findFirst({
@@ -14,10 +15,12 @@ export async function getHomeSettings() {
 import { translateText } from '@/lib/translate'
 
 export async function autoTranslateSettingsAction(text: string) {
+    await requireSession()
     return await translateText(text, 'en')
 }
 
 export async function updateHomeSettings(formData: FormData) {
+    await requireSession()
     const data: any = {}
     const fields = [
         'heroSubtitle', 'heroTitle', 'heroTitleHighlight', 
@@ -85,6 +88,7 @@ export async function getFooterSettings() {
 }
 
 export async function updateFooterSettings(formData: FormData) {
+    await requireSession()
     const fields = ['brandContent', 'contactContent', 'socialContent', 'bottomText']
     const data: any = {}
 

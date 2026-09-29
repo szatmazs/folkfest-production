@@ -7,6 +7,7 @@ import { GalleryLightbox } from "@/components/ui/gallery-lightbox";
 import { VideoResult } from "@/components/features/video-result";
 import { BlockRenderer } from "@/components/features/block-renderer";
 import { getTranslations } from 'next-intl/server';
+import { sanitizeHtml } from '@/lib/sanitize-html';
 
 interface ProjectPageProps {
     params: Promise<{
@@ -170,7 +171,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                             {displayProjectData && (
                                 <div
                                     className="prose prose-lg max-w-none text-gray-800"
-                                    dangerouslySetInnerHTML={{ __html: displayProjectData }}
+                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayProjectData) }}
                                 />
                             )}
                             {project.mainImage && (

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { slugify } from '@/lib/slugify'
+import { requireSession } from '@/lib/auth'
 
 export async function getPages() {
     return await prisma.page.findMany({
@@ -21,6 +22,7 @@ import { uploadImage } from '@/lib/upload'
 import { translateText, translateTextWithPreservation } from '@/lib/translate'
 
 export async function autoTranslatePageAction(text: string, currentEn?: string, originalHu?: string) {
+    await requireSession()
     if (!text) return '';
     const trimmed = text.trim();
     const isJson = (trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'));
@@ -39,6 +41,7 @@ export async function autoTranslatePageAction(text: string, currentEn?: string, 
 }
 
 export async function createPage(formData: FormData) {
+    await requireSession()
     const title = formData.get('title') as string
     let titleEn = formData.get('titleEn') as string
     let slug = formData.get('slug') as string
@@ -127,6 +130,7 @@ export async function createPage(formData: FormData) {
 }
 
 export async function updatePage(id: string, formData: FormData) {
+    await requireSession()
     const title = formData.get('title') as string
     let titleEn = formData.get('titleEn') as string
     let slug = formData.get('slug') as string
@@ -216,6 +220,7 @@ export async function updatePage(id: string, formData: FormData) {
 }
 
 export async function deletePage(id: string) {
+    await requireSession()
     await prisma.page.delete({
         where: { id },
     })

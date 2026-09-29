@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { Project } from '@prisma/client'
 import { slugify } from '@/lib/slugify'
+import { requireSession } from '@/lib/auth'
 
 export async function getProjects() {
     return await prisma.project.findMany({
@@ -95,6 +96,7 @@ async function processRelations(formData: FormData) {
 }
 
 export async function createProject(formData: FormData) {
+    await requireSession()
     const title = formData.get('title') as string
     let titleEn = formData.get('titleEn') as string
     if (!titleEn && title) titleEn = await translateText(title, 'en')
@@ -195,6 +197,7 @@ export async function createProject(formData: FormData) {
 }
 
 export async function updateProject(id: string, formData: FormData) {
+    await requireSession()
     const title = formData.get('title') as string
     let titleEn = formData.get('titleEn') as string
     if (!titleEn && title) titleEn = await translateText(title, 'en')
@@ -294,6 +297,7 @@ export async function updateProject(id: string, formData: FormData) {
 }
 
 export async function deleteProject(id: string) {
+    await requireSession()
     await prisma.project.delete({
         where: { id },
     })
@@ -304,6 +308,7 @@ export async function deleteProject(id: string) {
 import { translateText, translateTextWithPreservation } from '@/lib/translate'
 
 export async function autoTranslateProjectAction(text: string, currentEn?: string, originalHu?: string) {
+    await requireSession()
     if (!text) return '';
     const trimmed = text.trim();
     const isJson = (trimmed.startsWith('[') && trimmed.endsWith(']')) || (trimmed.startsWith('{') && trimmed.endsWith('}'));

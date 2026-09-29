@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { requireSession } from '@/lib/auth'
 
 export async function getMenuItems() {
     return await prisma.menuItem.findMany({
@@ -20,10 +21,12 @@ export async function getAllMenuItems() {
 import { translateText } from '@/lib/translate'
 
 export async function autoTranslateMenuAction(text: string) {
+    await requireSession()
     return await translateText(text, 'en')
 }
 
 export async function createMenuItem(formData: FormData) {
+    await requireSession()
     const label = formData.get('label') as string
     let labelEn = formData.get('labelEn') as string
     if (!labelEn && label) labelEn = await translateText(label, 'en')
@@ -52,6 +55,7 @@ export async function createMenuItem(formData: FormData) {
 }
 
 export async function updateMenuItem(id: string, formData: FormData) {
+    await requireSession()
     const label = formData.get('label') as string
     let labelEn = formData.get('labelEn') as string
     if (!labelEn && label) labelEn = await translateText(label, 'en')
@@ -78,6 +82,7 @@ export async function updateMenuItem(id: string, formData: FormData) {
 }
 
 export async function deleteMenuItem(id: string) {
+    await requireSession()
     await prisma.menuItem.delete({
         where: { id }
     })
@@ -87,6 +92,7 @@ export async function deleteMenuItem(id: string) {
 }
 
 export async function reorderMenu(ids: string[]) {
+    await requireSession()
     // Transaction to update all orders
     // Simply set order based on index * 10
 

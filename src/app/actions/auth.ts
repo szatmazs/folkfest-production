@@ -7,8 +7,12 @@ import { prisma } from '@/lib/prisma'
 import { encrypt, getSession } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function loginAction(prevState: any, formData: FormData) {
+    if (!rateLimit('admin-login', 10, 15 * 60 * 1000)) {
+        return { error: 'Túl sok bejelentkezési kísérlet. Próbáld újra később.' }
+    }
     const username = formData.get('username') as string
     const password = formData.get('password') as string
 
@@ -57,8 +61,8 @@ export async function updatePasswordAction(formData: FormData) {
         throw new Error('Az új jelszavak nem egyeznek')
     }
 
-    if (newPassword.length < 6) {
-        throw new Error('A jelszónak legalább 6 karakternek kell lennie')
+    if (newPassword.length < 12) {
+        throw new Error('A jelszónak legalább 12 karakternek kell lennie')
     }
 
     const user = await prisma.adminUser.findUnique({

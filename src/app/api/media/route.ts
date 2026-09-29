@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { readdir, stat } from 'fs/promises'
 import { join } from 'path'
+import { getSession } from '@/lib/auth'
 
 export async function GET() {
     try {
+        if (!(await getSession())?.userId) {
+            return NextResponse.json({ error: 'Nincs jogosultság' }, { status: 401 })
+        }
         const uploadsDir = join(process.cwd(), 'public', 'uploads')
         
         // Helperes to recursively get all files

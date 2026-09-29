@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { uploadImage } from '@/lib/upload'
 import { revalidatePath } from 'next/cache'
+import { requireSession } from '@/lib/auth'
 
 export async function getPartners() {
     const partners = await prisma.partner.findMany()
@@ -10,6 +11,7 @@ export async function getPartners() {
 }
 
 export async function createPartner(formData: FormData) {
+    await requireSession()
     const name = formData.get('name') as string
     const websiteUrl = formData.get('websiteUrl') as string
     const logoUrlInput = formData.get('logoUrl') as string
@@ -43,6 +45,7 @@ export async function createPartner(formData: FormData) {
 }
 
 export async function updatePartner(id: string, formData: FormData) {
+    await requireSession()
     const name = formData.get('name') as string
     const websiteUrl = formData.get('websiteUrl') as string
     const logoUrlInput = formData.get('logoUrl') as string
@@ -73,6 +76,7 @@ export async function updatePartner(id: string, formData: FormData) {
 }
 
 export async function deletePartner(id: string) {
+    await requireSession()
     await prisma.partner.delete({
         where: { id },
     })

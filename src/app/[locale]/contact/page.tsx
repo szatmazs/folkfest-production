@@ -4,6 +4,7 @@ import { ContactForm } from "./contact-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from "next";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
     const { locale } = await params;
@@ -75,7 +76,7 @@ export default async function ContactPage({ params }: PageProps) {
                                                 <p className="font-bold uppercase tracking-wider text-sm text-gray-500 mb-1">{displayTitle}</p>
                                                 <div
                                                     className="text-lg prose-p:my-0 [&_a]:text-inherit [&_a]:no-underline"
-                                                    dangerouslySetInnerHTML={{ __html: displayContent }}
+                                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayContent) }}
                                                 />
                                             </div>
                                         </li>
@@ -112,7 +113,7 @@ export default async function ContactPage({ params }: PageProps) {
                                 <h3 className="font-bold uppercase tracking-wide mb-4">{t('infoTitle')}</h3>
                                 <div
                                     className="prose prose-sm text-gray-600 max-w-none"
-                                    dangerouslySetInnerHTML={{ __html: displayFooterInfo }}
+                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayFooterInfo) }}
                                 />
                             </div>
                         )}
