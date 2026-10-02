@@ -63,7 +63,7 @@ export function PartnersCarousel() {
                                     key={`${partner.id}-${index}`}
                                     href={partner.websiteUrl}
                                     target="_blank"
-                                    rel="noopener noreferrer"
+                                    rel="noopener"
                                     className="block"
                                 >
                                     {content}

@@ -31,7 +31,7 @@ export function PartnerGrid({ partners, title }: { partners: Partner[], title?: 
                                     key={partner.id}
                                     href={partner.websiteUrl}
                                     target="_blank"
-                                    rel="noopener noreferrer"
+                                    rel="noopener"
                                     className="block"
                                 >
                                     {Content}
